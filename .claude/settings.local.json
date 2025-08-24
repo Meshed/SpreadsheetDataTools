@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/c:\\workspace\\SpreadsheetDataTools\\docs/**)",
+      "Read(/c:\\workspace\\SpreadsheetDataTools\\docs/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
