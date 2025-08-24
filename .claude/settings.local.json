@@ -2,7 +2,16 @@
   "permissions": {
     "allow": [
       "Read(/c:\\workspace\\SpreadsheetDataTools\\docs/**)",
-      "Read(/c:\\workspace\\SpreadsheetDataTools\\docs/**)"
+      "Read(/c:\\workspace\\SpreadsheetDataTools\\docs/**)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(timeout 10s npm run dev)",
+      "Bash(npm install)",
+      "Bash(timeout 5s npm run dev)",
+      "Bash(npm test)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint)",
+      "Bash(npx elm-format:*)"
     ],
     "deny": [],
     "ask": []

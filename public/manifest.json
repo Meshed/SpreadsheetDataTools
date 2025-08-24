@@ -1,0 +1,16 @@
+{
+  "name": "Spreadsheet Data Tools",
+  "short_name": "Data Tools",
+  "description": "Privacy-focused client-side spreadsheet data processing",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
