@@ -2,8 +2,15 @@
 @import 'base/reset.css';
 @import 'base/typography.css';
 
+/* Import layout styles */
+@import 'layout/grid.css';
+
 /* Import component styles */
 @import 'components/app.css';
+@import 'components/cards.css';
+
+/* Import page styles */
+@import 'pages/landing.css';
 
 /* Root variables */
 :root {

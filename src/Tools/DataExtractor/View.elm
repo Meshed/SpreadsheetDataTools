@@ -3,10 +3,11 @@ module Tools.DataExtractor.View exposing (view)
 {-| Data Extractor tool placeholder view.
 
 @docs view
+
 -}
 
-import Html exposing (Html, div, h1, p, a, text)
-import Html.Attributes exposing (class, href, attribute)
+import Html exposing (Html, a, div, h1, p, text)
+import Html.Attributes exposing (attribute, class, href)
 
 
 {-| Data Extractor placeholder view

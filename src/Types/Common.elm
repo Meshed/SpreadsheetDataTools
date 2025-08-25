@@ -1,11 +1,9 @@
-module Types.Common exposing
-    ( Route(..)
-    , AppError(..)
-    )
+module Types.Common exposing (Route(..), AppError(..))
 
 {-| Shared type definitions across the application.
 
 @docs Route, AppError
+
 -}
 
 

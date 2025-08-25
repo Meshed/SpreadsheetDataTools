@@ -3,10 +3,11 @@ module Pages.NotFound exposing (view)
 {-| 404 Not Found page component.
 
 @docs view
+
 -}
 
-import Html exposing (Html, div, h1, p, a, text)
-import Html.Attributes exposing (class, href, attribute)
+import Html exposing (Html, a, div, h1, p, text)
+import Html.Attributes exposing (attribute, class, href)
 
 
 {-| 404 Not Found page view with navigation back to home

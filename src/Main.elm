@@ -2,15 +2,15 @@ module Main exposing (main, parseUrl, routeToString)
 
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Html, div, nav, a, text)
-import Html.Attributes exposing (class, href, attribute)
+import Html exposing (Html, a, div, nav, text)
+import Html.Attributes exposing (attribute, class, href)
 import Pages.Home
 import Pages.NotFound
 import Tools.DataExtractor.View
 import Tools.DataMerger.View
-import Types.Common exposing (Route(..), AppError(..))
+import Types.Common exposing (AppError(..), Route(..))
 import Url
-import Url.Parser exposing (Parser, oneOf, s, top, parse)
+import Url.Parser exposing (Parser, oneOf, parse, s, top)
 
 
 type alias Model =
@@ -28,7 +28,8 @@ type Msg
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
     let
-        route = parseUrl url
+        route =
+            parseUrl url
     in
     ( { key = key
       , route = route
@@ -51,7 +52,8 @@ update msg model =
 
         UrlChanged url ->
             let
-                newRoute = parseUrl url
+                newRoute =
+                    parseUrl url
             in
             ( { model | route = newRoute, globalError = Nothing }
             , Cmd.none
@@ -103,7 +105,7 @@ routeToString route =
 view : Model -> Browser.Document Msg
 view model =
     { title = pageTitle model.route
-    , body = 
+    , body =
         [ div [ class "app" ]
             [ viewNavigation model.route
             , viewMainContent model.route model.globalError
@@ -136,19 +138,43 @@ viewNavigation : Route -> Html Msg
 viewNavigation currentRoute =
     nav [ class "app__nav" ]
         [ a
-            [ class ("app__nav-link" ++ if currentRoute == Home then " app__nav-link--active" else "")
+            [ class
+                ("app__nav-link"
+                    ++ (if currentRoute == Home then
+                            " app__nav-link--active"
+
+                        else
+                            ""
+                       )
+                )
             , href "/"
             , attribute "data-testid" "nav-home"
             ]
             [ text "Home" ]
         , a
-            [ class ("app__nav-link" ++ if currentRoute == DataExtractor then " app__nav-link--active" else "")
+            [ class
+                ("app__nav-link"
+                    ++ (if currentRoute == DataExtractor then
+                            " app__nav-link--active"
+
+                        else
+                            ""
+                       )
+                )
             , href "/data-extractor"
             , attribute "data-testid" "nav-data-extractor"
             ]
             [ text "Data Extractor" ]
         , a
-            [ class ("app__nav-link" ++ if currentRoute == DataMerger then " app__nav-link--active" else "")
+            [ class
+                ("app__nav-link"
+                    ++ (if currentRoute == DataMerger then
+                            " app__nav-link--active"
+
+                        else
+                            ""
+                       )
+                )
             , href "/data-merger"
             , attribute "data-testid" "nav-data-merger"
             ]

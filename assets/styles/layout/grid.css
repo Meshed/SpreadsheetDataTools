@@ -1,0 +1,72 @@
+/* Grid Layout System */
+
+.grid {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.grid--responsive {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.grid--two-cols {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid--three-cols {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid--gap-sm {
+  gap: var(--spacing-sm);
+}
+
+.grid--gap-md {
+  gap: var(--spacing-md);
+}
+
+.grid--gap-lg {
+  gap: var(--spacing-lg);
+}
+
+.grid--gap-xl {
+  gap: var(--spacing-xl);
+}
+
+/* Responsive grid utilities */
+@media (max-width: 1024px) {
+  .grid--three-cols {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid--two-cols,
+  .grid--three-cols {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid--responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Grid item utilities */
+.grid-item {
+  width: 100%;
+}
+
+.grid-item--span-2 {
+  grid-column: span 2;
+}
+
+.grid-item--span-3 {
+  grid-column: span 3;
+}
+
+@media (max-width: 768px) {
+  .grid-item--span-2,
+  .grid-item--span-3 {
+    grid-column: span 1;
+  }
+}
