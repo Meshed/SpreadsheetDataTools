@@ -1,0 +1,190 @@
+/* Color Utility Classes - BEM Methodology */
+
+/* Text Colors */
+.u-text-primary { color: var(--color-primary) !important; }
+.u-text-primary-hover:hover { color: var(--color-primary-hover) !important; }
+.u-text-primary-light { color: var(--color-primary-light) !important; }
+.u-text-primary-dark { color: var(--color-primary-dark) !important; }
+
+.u-text-secondary { color: var(--color-secondary) !important; }
+.u-text-secondary-hover:hover { color: var(--color-secondary-hover) !important; }
+.u-text-secondary-light { color: var(--color-secondary-light) !important; }
+.u-text-secondary-dark { color: var(--color-secondary-dark) !important; }
+
+.u-text-default { color: var(--color-text) !important; }
+.u-text-muted { color: var(--color-text-muted) !important; }
+.u-text-light { color: var(--color-text-light) !important; }
+
+.u-text-success { color: var(--color-success) !important; }
+.u-text-success-light { color: var(--color-success-light) !important; }
+.u-text-warning { color: var(--color-warning) !important; }
+.u-text-warning-light { color: var(--color-warning-light) !important; }
+.u-text-error { color: var(--color-error) !important; }
+.u-text-error-light { color: var(--color-error-light) !important; }
+
+.u-text-white { color: var(--color-background) !important; }
+.u-text-black { color: var(--color-text) !important; }
+
+/* Background Colors */
+.u-bg-primary { background-color: var(--color-primary) !important; }
+.u-bg-primary-hover:hover { background-color: var(--color-primary-hover) !important; }
+.u-bg-primary-light { background-color: var(--color-primary-light) !important; }
+.u-bg-primary-dark { background-color: var(--color-primary-dark) !important; }
+
+.u-bg-secondary { background-color: var(--color-secondary) !important; }
+.u-bg-secondary-hover:hover { background-color: var(--color-secondary-hover) !important; }
+.u-bg-secondary-light { background-color: var(--color-secondary-light) !important; }
+.u-bg-secondary-dark { background-color: var(--color-secondary-dark) !important; }
+
+.u-bg-background { background-color: var(--color-background) !important; }
+.u-bg-surface { background-color: var(--color-surface) !important; }
+
+.u-bg-success { background-color: var(--color-success) !important; }
+.u-bg-success-light { background-color: var(--color-success-light) !important; }
+.u-bg-warning { background-color: var(--color-warning) !important; }
+.u-bg-warning-light { background-color: var(--color-warning-light) !important; }
+.u-bg-error { background-color: var(--color-error) !important; }
+.u-bg-error-light { background-color: var(--color-error-light) !important; }
+
+.u-bg-transparent { background-color: transparent !important; }
+.u-bg-white { background-color: var(--color-background) !important; }
+.u-bg-black { background-color: var(--color-text) !important; }
+
+/* Background Color with Opacity */
+.u-bg-primary-10 { background-color: rgba(37, 99, 235, 0.1) !important; }
+.u-bg-primary-20 { background-color: rgba(37, 99, 235, 0.2) !important; }
+.u-bg-primary-30 { background-color: rgba(37, 99, 235, 0.3) !important; }
+.u-bg-primary-50 { background-color: rgba(37, 99, 235, 0.5) !important; }
+
+.u-bg-secondary-10 { background-color: rgba(100, 116, 139, 0.1) !important; }
+.u-bg-secondary-20 { background-color: rgba(100, 116, 139, 0.2) !important; }
+.u-bg-secondary-30 { background-color: rgba(100, 116, 139, 0.3) !important; }
+.u-bg-secondary-50 { background-color: rgba(100, 116, 139, 0.5) !important; }
+
+.u-bg-success-10 { background-color: rgba(16, 185, 129, 0.1) !important; }
+.u-bg-success-20 { background-color: rgba(16, 185, 129, 0.2) !important; }
+.u-bg-warning-10 { background-color: rgba(245, 158, 11, 0.1) !important; }
+.u-bg-warning-20 { background-color: rgba(245, 158, 11, 0.2) !important; }
+.u-bg-error-10 { background-color: rgba(239, 68, 68, 0.1) !important; }
+.u-bg-error-20 { background-color: rgba(239, 68, 68, 0.2) !important; }
+
+/* Border Colors */
+.u-border-primary { border-color: var(--color-primary) !important; }
+.u-border-primary-hover:hover { border-color: var(--color-primary-hover) !important; }
+.u-border-primary-light { border-color: var(--color-primary-light) !important; }
+.u-border-primary-dark { border-color: var(--color-primary-dark) !important; }
+
+.u-border-secondary { border-color: var(--color-secondary) !important; }
+.u-border-secondary-hover:hover { border-color: var(--color-secondary-hover) !important; }
+.u-border-secondary-light { border-color: var(--color-secondary-light) !important; }
+.u-border-secondary-dark { border-color: var(--color-secondary-dark) !important; }
+
+.u-border-default { border-color: var(--color-border) !important; }
+.u-border-light { border-color: var(--color-border-light) !important; }
+
+.u-border-success { border-color: var(--color-success) !important; }
+.u-border-success-light { border-color: var(--color-success-light) !important; }
+.u-border-warning { border-color: var(--color-warning) !important; }
+.u-border-warning-light { border-color: var(--color-warning-light) !important; }
+.u-border-error { border-color: var(--color-error) !important; }
+.u-border-error-light { border-color: var(--color-error-light) !important; }
+
+.u-border-transparent { border-color: transparent !important; }
+.u-border-white { border-color: var(--color-background) !important; }
+.u-border-black { border-color: var(--color-text) !important; }
+
+/* Fill Colors for SVGs */
+.u-fill-primary { fill: var(--color-primary) !important; }
+.u-fill-secondary { fill: var(--color-secondary) !important; }
+.u-fill-text { fill: var(--color-text) !important; }
+.u-fill-muted { fill: var(--color-text-muted) !important; }
+.u-fill-success { fill: var(--color-success) !important; }
+.u-fill-warning { fill: var(--color-warning) !important; }
+.u-fill-error { fill: var(--color-error) !important; }
+.u-fill-white { fill: var(--color-background) !important; }
+.u-fill-current { fill: currentColor !important; }
+
+/* Stroke Colors for SVGs */
+.u-stroke-primary { stroke: var(--color-primary) !important; }
+.u-stroke-secondary { stroke: var(--color-secondary) !important; }
+.u-stroke-text { stroke: var(--color-text) !important; }
+.u-stroke-muted { stroke: var(--color-text-muted) !important; }
+.u-stroke-success { stroke: var(--color-success) !important; }
+.u-stroke-warning { stroke: var(--color-warning) !important; }
+.u-stroke-error { stroke: var(--color-error) !important; }
+.u-stroke-white { stroke: var(--color-background) !important; }
+.u-stroke-current { stroke: currentColor !important; }
+
+/* Hover States */
+.u-hover-text-primary:hover { color: var(--color-primary) !important; }
+.u-hover-text-secondary:hover { color: var(--color-secondary) !important; }
+.u-hover-text-success:hover { color: var(--color-success) !important; }
+.u-hover-text-warning:hover { color: var(--color-warning) !important; }
+.u-hover-text-error:hover { color: var(--color-error) !important; }
+
+.u-hover-bg-primary:hover { background-color: var(--color-primary) !important; }
+.u-hover-bg-secondary:hover { background-color: var(--color-secondary) !important; }
+.u-hover-bg-surface:hover { background-color: var(--color-surface) !important; }
+.u-hover-bg-success:hover { background-color: var(--color-success) !important; }
+.u-hover-bg-warning:hover { background-color: var(--color-warning) !important; }
+.u-hover-bg-error:hover { background-color: var(--color-error) !important; }
+
+.u-hover-bg-primary-10:hover { background-color: rgba(37, 99, 235, 0.1) !important; }
+.u-hover-bg-secondary-10:hover { background-color: rgba(100, 116, 139, 0.1) !important; }
+.u-hover-bg-success-10:hover { background-color: rgba(16, 185, 129, 0.1) !important; }
+.u-hover-bg-warning-10:hover { background-color: rgba(245, 158, 11, 0.1) !important; }
+.u-hover-bg-error-10:hover { background-color: rgba(239, 68, 68, 0.1) !important; }
+
+/* Focus States */
+.u-focus-text-primary:focus { color: var(--color-primary) !important; }
+.u-focus-border-primary:focus { border-color: var(--color-primary) !important; }
+.u-focus-bg-surface:focus { background-color: var(--color-surface) !important; }
+
+/* Gradient Utilities */
+.u-gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%) !important;
+}
+
+.u-gradient-secondary {
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%) !important;
+}
+
+.u-gradient-success {
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%) !important;
+}
+
+.u-gradient-surface {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-background) 100%) !important;
+}
+
+/* Color Scheme Specific */
+.u-color-scheme-light {
+  color-scheme: light !important;
+}
+
+.u-color-scheme-dark {
+  color-scheme: dark !important;
+}
+
+.u-color-scheme-auto {
+  color-scheme: light dark !important;
+}
+
+/* Opacity Utilities */
+.u-opacity-0 { opacity: 0 !important; }
+.u-opacity-10 { opacity: 0.1 !important; }
+.u-opacity-20 { opacity: 0.2 !important; }
+.u-opacity-30 { opacity: 0.3 !important; }
+.u-opacity-40 { opacity: 0.4 !important; }
+.u-opacity-50 { opacity: 0.5 !important; }
+.u-opacity-60 { opacity: 0.6 !important; }
+.u-opacity-70 { opacity: 0.7 !important; }
+.u-opacity-80 { opacity: 0.8 !important; }
+.u-opacity-90 { opacity: 0.9 !important; }
+.u-opacity-100 { opacity: 1 !important; }
+
+/* Hover Opacity */
+.u-hover-opacity-0:hover { opacity: 0 !important; }
+.u-hover-opacity-50:hover { opacity: 0.5 !important; }
+.u-hover-opacity-70:hover { opacity: 0.7 !important; }
+.u-hover-opacity-100:hover { opacity: 1 !important; }

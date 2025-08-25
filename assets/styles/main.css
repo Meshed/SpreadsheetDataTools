@@ -1,33 +1,28 @@
-/* Import base styles */
+/* Import base styles first */
 @import 'base/reset.css';
+@import 'base/variables.css';
 @import 'base/typography.css';
 
 /* Import layout styles */
+@import 'layout/containers.css';
 @import 'layout/grid.css';
+@import 'layout/header.css';
+@import 'layout/footer.css';
 
 /* Import component styles */
-@import 'components/app.css';
+@import 'components/buttons.css';
 @import 'components/cards.css';
+@import 'components/forms.css';
+@import 'components/progress.css';
+@import 'components/wizard.css';
+@import 'components/app.css';
 
-/* Import page styles */
+/* Import utility classes */
+@import 'utilities/spacing.css';
+@import 'utilities/colors.css';
+@import 'utilities/helpers.css';
+
+/* Import page-specific styles last */
 @import 'pages/landing.css';
-
-/* Root variables */
-:root {
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-secondary: #64748b;
-  --color-background: #ffffff;
-  --color-surface: #f8fafc;
-  --color-text: #1e293b;
-  --color-text-muted: #64748b;
-  
-  --spacing-xs: 0.5rem;
-  --spacing-sm: 1rem;
-  --spacing-md: 1.5rem;
-  --spacing-lg: 2rem;
-  --spacing-xl: 3rem;
-  
-  --border-radius: 0.5rem;
-  --box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-}
+@import 'pages/data-extractor.css';
+@import 'pages/data-merger.css';
