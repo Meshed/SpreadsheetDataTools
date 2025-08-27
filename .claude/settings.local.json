@@ -21,7 +21,8 @@
       "Bash(npx jest:*)",
       "Bash(elm-test:*)",
       "Bash(grep:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(echo \"Available Commands:\n\n1. help - Show numbered list of available commands\n2. correct-course - Execute course correction task \n3. draft - Execute story creation workflow\n4. story-checklist - Execute story draft checklist review\n5. exit - Exit Scrum Master mode\n\nSelect a number or type a command (with * prefix) to proceed.\")"
     ],
     "deny": [],
     "ask": []
