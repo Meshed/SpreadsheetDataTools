@@ -376,6 +376,38 @@ describe('Story 1.3: Landing Page with Tool Cards', () => {
       cy.get('.privacy-banner').should('have.css', 'padding')
     })
 
+    it('positions privacy banner above tool cards in layout', () => {
+      // Get positions of privacy banner and first tool card to verify ordering
+      cy.get('.privacy-banner').should('be.visible').then(($banner) => {
+        const bannerRect = $banner[0].getBoundingClientRect()
+        
+        cy.get('[data-testid="tool-card-data-extractor"]').should('be.visible').then(($card) => {
+          const cardRect = $card[0].getBoundingClientRect()
+          
+          // Privacy banner should be positioned above the tool cards
+          expect(bannerRect.bottom).to.be.lessThan(cardRect.top, 
+            'Privacy banner should be positioned above tool cards')
+        })
+      })
+      
+      // Verify privacy banner comes after header but before tool cards in DOM order
+      cy.get('.homepage').within(() => {
+        cy.get('.homepage__header').should('exist')
+        cy.get('.privacy-banner').should('exist')
+        cy.get('.homepage__tools').should('exist')
+      })
+      
+      // Verify DOM order: header -> privacy banner -> tools
+      cy.get('.homepage > *').then(($elements) => {
+        const headerIndex = Array.from($elements).findIndex(el => el.classList.contains('homepage__header'))
+        const bannerIndex = Array.from($elements).findIndex(el => el.classList.contains('privacy-banner'))
+        const toolsIndex = Array.from($elements).findIndex(el => el.classList.contains('homepage__tools'))
+        
+        expect(headerIndex).to.be.lessThan(bannerIndex, 'Header should come before privacy banner')
+        expect(bannerIndex).to.be.lessThan(toolsIndex, 'Privacy banner should come before tool cards')
+      })
+    })
+
     it('contains reassuring and clear messaging about data handling', () => {
       // Verify message is reassuring and professional
       cy.get('.privacy-banner__text').should(($text) => {

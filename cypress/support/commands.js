@@ -16,15 +16,31 @@ Cypress.Commands.add('waitForElmApp', () => {
 })
 
 // Custom command to navigate using the app's navigation
+// Enforces that tool navigation must go through the landing page
 Cypress.Commands.add('navigateToRoute', (route) => {
   const routes = {
     'home': '[data-testid="nav-home"]',
-    'data-extractor': '[data-testid="nav-data-extractor"]', 
-    'data-merger': '[data-testid="nav-data-merger"]'
+    'data-extractor': '[data-testid="tool-card-data-extractor"]', 
+    'data-merger': '[data-testid="tool-card-data-merger"]'
   }
   
   if (routes[route]) {
-    cy.get(routes[route]).first().click()
+    if (route === 'home') {
+      // Direct navigation to home via header link
+      cy.get(routes[route]).first().click()
+      cy.get('[data-testid="homepage"]').should('be.visible')
+    } else {
+      // Tool navigation: MUST go through landing page first
+      cy.url().then((url) => {
+        if (!url.endsWith('/') && !url.endsWith('/home')) {
+          // Navigate to home first if not already there
+          cy.get('[data-testid="nav-home"]').first().click()
+          cy.get('[data-testid="homepage"]').should('be.visible')
+        }
+      })
+      // Then click the tool card from the landing page
+      cy.get(routes[route]).first().should('be.visible').click()
+    }
   } else {
     throw new Error(`Unknown route: ${route}`)
   }

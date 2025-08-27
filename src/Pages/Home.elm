@@ -21,6 +21,7 @@ view =
             , p [ class "homepage__subtitle" ]
                 [ text "Privacy-focused tools for comparing, extracting, and merging spreadsheet data" ]
             ]
+        , privacyMessage
         , div [ class "homepage__tools tool-cards" ]
             [ toolCard
                 { title = "Data Extractor"
@@ -37,7 +38,6 @@ view =
                 , iconPath = "/assets/images/icons/data-merger.svg"
                 }
             ]
-        , privacyMessage
         ]
 
 
@@ -58,14 +58,16 @@ toolCard config =
         , attribute "data-testid" config.testId
         ]
         [ div [ class "tool-card__content" ]
-            [ img
-                [ class "tool-card__icon"
-                , src config.iconPath
-                , alt (config.title ++ " icon")
+            [ div [ class "tool-card__header" ]
+                [ img
+                    [ class "tool-card__icon"
+                    , src config.iconPath
+                    , alt (config.title ++ " icon")
+                    ]
+                    []
+                , h2 [ class "tool-card__title" ]
+                    [ text config.title ]
                 ]
-                []
-            , h2 [ class "tool-card__title" ]
-                [ text config.title ]
             , p [ class "tool-card__description" ]
                 [ text config.description ]
             , div [ class "tool-card__button" ]

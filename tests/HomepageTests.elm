@@ -90,6 +90,12 @@ suite =
                         |> Query.fromHtml
                         |> Query.findAll [ Selector.class "tool-card__button" ]
                         |> Query.count (Expect.equal 2)
+            , test "tool cards contain header sections with icon-title layout" <|
+                \_ ->
+                    Pages.Home.view
+                        |> Query.fromHtml
+                        |> Query.findAll [ Selector.class "tool-card__header" ]
+                        |> Query.count (Expect.equal 2)
             ]
         , describe "Card Content Tests"
             [ test "first tool card shows Data Extractor title" <|
@@ -128,6 +134,19 @@ suite =
                             , Query.has [ Selector.text "locally" ]
                             , Query.has [ Selector.text "browser" ]
                             ]
+            , test "privacy banner is positioned between header and tools in DOM structure" <|
+                \_ ->
+                    let
+                        children =
+                            Pages.Home.view
+                                |> Query.fromHtml
+                                |> Query.children []
+                    in
+                    Expect.all
+                        [ \_ -> children |> Query.index 0 |> Query.has [ Selector.class "homepage__header" ]
+                        , \_ -> children |> Query.index 1 |> Query.has [ Selector.class "privacy-banner" ]
+                        , \_ -> children |> Query.index 2 |> Query.has [ Selector.class "homepage__tools" ]
+                        ] ()
             ]
         , describe "Navigation Structure Tests"
             [ test "tool cards are implemented as anchor links" <|

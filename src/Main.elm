@@ -205,34 +205,6 @@ viewNavigation currentRoute =
             , attribute "data-testid" "nav-home"
             ]
             [ text "Home" ]
-        , a
-            [ class
-                ("app__nav-link"
-                    ++ (if currentRoute == DataExtractor then
-                            " app__nav-link--active"
-
-                        else
-                            ""
-                       )
-                )
-            , href "/data-extractor"
-            , attribute "data-testid" "nav-data-extractor"
-            ]
-            [ text "Extractor" ]
-        , a
-            [ class
-                ("app__nav-link"
-                    ++ (if currentRoute == DataMerger then
-                            " app__nav-link--active"
-
-                        else
-                            ""
-                       )
-                )
-            , href "/data-merger"
-            , attribute "data-testid" "nav-data-merger"
-            ]
-            [ text "Merger" ]
         ]
 
 

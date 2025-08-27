@@ -20,7 +20,8 @@
       "Bash(npx cypress run:*)",
       "Bash(npx jest:*)",
       "Bash(elm-test:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

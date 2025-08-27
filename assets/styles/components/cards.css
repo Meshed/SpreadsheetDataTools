@@ -139,10 +139,16 @@
   flex-direction: column;
 }
 
-.tool-card__icon {
-  width: 3rem;
-  height: 3rem;
+.tool-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-md);
+}
+
+.tool-card__icon {
+  width: 2rem;
+  height: 2rem;
   color: var(--color-primary);
   flex-shrink: 0;
 }
@@ -151,7 +157,7 @@
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0;
   line-height: var(--line-height-tight);
 }
 
@@ -351,8 +357,8 @@
   }
   
   .tool-card__icon {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 1.75rem;
+    height: 1.75rem;
   }
   
   .card__header,
