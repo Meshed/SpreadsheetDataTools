@@ -71,22 +71,60 @@ viewUploadAreas model =
 -}
 viewMasterUploadArea : Model -> Html Msg
 viewMasterUploadArea model =
+    let
+        fileInfoElements =
+            case model.masterFile of
+                Just fileData ->
+                    [ div [ class "upload-area__file-info" ]
+                        [ text ("Master Spreadsheet: " ++ fileData.fileName ++ " (" ++ String.fromInt fileData.rowCount ++ " rows)") ]
+                    ]
+                Nothing ->
+                    []
+
+        errorElements =
+            case model.masterFileError of
+                Just error ->
+                    [ div [ class "upload-area__error" ]
+                        [ viewValidationError error ]
+                    ]
+                Nothing ->
+                    []
+    in
     div [ class "upload-area upload-area--master" ]
-        [ viewUploadZone "master" model.masterFile model.masterFileError model.isProcessing
-        , viewFileInfo "Master Spreadsheet" model.masterFile
-        , viewUploadError model.masterFileError
-        ]
+        ([ viewUploadZone "master" model.masterFile model.masterFileError model.isProcessing ]
+            ++ fileInfoElements
+            ++ errorElements
+        )
 
 
 {-| Data spreadsheet upload area
 -}
 viewDataUploadArea : Model -> Html Msg
 viewDataUploadArea model =
+    let
+        fileInfoElements =
+            case model.dataFile of
+                Just fileData ->
+                    [ div [ class "upload-area__file-info" ]
+                        [ text ("Data Spreadsheet: " ++ fileData.fileName ++ " (" ++ String.fromInt fileData.rowCount ++ " rows)") ]
+                    ]
+                Nothing ->
+                    []
+
+        errorElements =
+            case model.dataFileError of
+                Just error ->
+                    [ div [ class "upload-area__error" ]
+                        [ viewValidationError error ]
+                    ]
+                Nothing ->
+                    []
+    in
     div [ class "upload-area upload-area--data" ]
-        [ viewUploadZone "data" model.dataFile model.dataFileError model.isProcessing
-        , viewFileInfo "Data Spreadsheet" model.dataFile
-        , viewUploadError model.dataFileError
-        ]
+        ([ viewUploadZone "data" model.dataFile model.dataFileError model.isProcessing ]
+            ++ fileInfoElements
+            ++ errorElements
+        )
 
 
 {-| Upload zone with drag-and-drop functionality
@@ -171,9 +209,7 @@ viewUploadZone fileType maybeFile maybeError isProcessing =
 viewEmptyState : String -> Html Msg
 viewEmptyState fileType =
     div [ class "upload-zone__content" ]
-        [ div [ class "upload-zone__icon" ]
-            [ text "📁" ]
-        , div [ class "upload-zone__text" ]
+        [ div [ class "upload-zone__text" ]
             [ p [ class "upload-zone__primary-text" ]
                 [ text ("Drop " ++ String.replace "-" " " fileType ++ " spreadsheet here") ]
             , p [ class "upload-zone__secondary-text" ]
@@ -189,9 +225,7 @@ viewEmptyState fileType =
 viewSuccessState : String -> Html Msg
 viewSuccessState fileType =
     div [ class "upload-zone__content upload-zone__content--success" ]
-        [ div [ class "upload-zone__icon upload-zone__icon--success" ]
-            [ text "✅" ]
-        , div [ class "upload-zone__text" ]
+        [ div [ class "upload-zone__text" ]
             [ p [ class "upload-zone__primary-text" ]
                 [ text (toTitleCase (String.replace "-" " " fileType) ++ " spreadsheet uploaded successfully") ]
             , button
@@ -217,35 +251,15 @@ viewProcessingState =
         ]
 
 
-{-| File information display
+{-| Simple validation error display
 -}
-viewFileInfo : String -> Maybe fileData -> Html Msg
-viewFileInfo label maybeFile =
-    case maybeFile of
-        Nothing ->
-            text ""
-
-        Just _ ->
-            -- File info will be implemented when FileData type is properly integrated
-            div [ class "upload-area__file-info" ]
-                [ text (label ++ " ready for processing") ]
-
-
-{-| Error display for upload validation
--}
-viewUploadError : Maybe ValidationError -> Html Msg
-viewUploadError maybeError =
-    case maybeError of
-        Nothing ->
-            text ""
-
-        Just error ->
-            let
-                errorConfig =
-                    validationErrorToErrorConfig error
-            in
-            div [ class "upload-area__error" ]
-                [ ErrorDisplay.view errorConfig ]
+viewValidationError : ValidationError -> Html Msg
+viewValidationError error =
+    let
+        errorConfig =
+            validationErrorToErrorConfig error
+    in
+    ErrorDisplay.view errorConfig
 
 
 {-| Convert validation error to ErrorDisplay config
