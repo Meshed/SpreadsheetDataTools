@@ -377,16 +377,4 @@ fileInputDecoder toMsg =
 -}
 fileDecoder : Decode.Decoder Encode.Value
 fileDecoder =
-    Decode.map4
-        (\name size type_ lastModified ->
-            Encode.object
-                [ ( "name", Encode.string name )
-                , ( "size", Encode.int size )
-                , ( "type", Encode.string type_ )
-                , ( "lastModified", Encode.float lastModified )
-                ]
-        )
-        (Decode.field "name" Decode.string)
-        (Decode.field "size" Decode.int)
-        (Decode.field "type" Decode.string)
-        (Decode.field "lastModified" Decode.float)
+    Decode.value

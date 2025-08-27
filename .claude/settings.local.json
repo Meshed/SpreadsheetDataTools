@@ -22,7 +22,9 @@
       "Bash(elm-test:*)",
       "Bash(grep:*)",
       "Bash(git log:*)",
-      "Bash(echo \"Available Commands:\n\n1. help - Show numbered list of available commands\n2. correct-course - Execute course correction task \n3. draft - Execute story creation workflow\n4. story-checklist - Execute story draft checklist review\n5. exit - Exit Scrum Master mode\n\nSelect a number or type a command (with * prefix) to proceed.\")"
+      "Bash(echo \"Available Commands:\n\n1. help - Show numbered list of available commands\n2. correct-course - Execute course correction task \n3. draft - Execute story creation workflow\n4. story-checklist - Execute story draft checklist review\n5. exit - Exit Scrum Master mode\n\nSelect a number or type a command (with * prefix) to proceed.\")",
+      "Bash(echo \"Available Commands:\n\n1. help - Show numbered list of available commands\n2. correct-course - Execute course correction task \n3. create-epic - Create epic for brownfield projects\n4. create-story - Create user story from requirements\n5. doc-out - Output full document to current destination file\n6. execute-checklist-po - Run PO master checklist\n7. shard-doc {document} {destination} - Shard document to destination\n8. validate-story-draft {story} - Validate story file\n9. yolo - Toggle Yolo Mode (skip doc section confirmations)\n10. exit - Exit PO mode\n\nSelect a number or type a command (with * prefix) to proceed.\")",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

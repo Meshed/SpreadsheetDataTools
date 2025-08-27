@@ -177,14 +177,24 @@ let fileIdCounter = 0;
  * Read Excel/CSV file using SheetJS and send result back to Elm
  * @param {Object} fileData - File object from Elm
  */
-function readExcelFile(fileData) {
+function readExcelFile(file) {
   try {
+    console.log('readExcelFile called with file:', file);
+    
+    // Validate that we received a proper File object
+    if (!file || !(file instanceof File)) {
+      console.error('Expected File object, got:', typeof file, file);
+      sendFileError('unknown', 'Unknown', 'Invalid file object received');
+      return;
+    }
+    
     // Extract file information
-    const file = fileData;
     const fileName = file.name || 'Unknown';
     const fileSize = file.size || 0;
     const fileType = file.type || '';
     const fileId = generateFileId();
+    
+    console.log('Processing file:', fileName, fileSize, fileType);
     
     // Validate file type
     const supportedTypes = [
@@ -272,9 +282,11 @@ function readExcelFile(fileData) {
         
         fileCache.set(fileId, fileResult);
         
-        // Send success result back to Elm
+        // Send success result back to Elm via the fileDataReceived subscription
         if (app.ports && app.ports.fileDataReceived) {
           app.ports.fileDataReceived.send(fileResult);
+        } else {
+          console.error('fileDataReceived port not found');
         }
         
       } catch (parseError) {
@@ -313,6 +325,8 @@ function sendFileError(fileId, fileName, errorMessage, errorDetails = {}) {
   
   if (app.ports && app.ports.fileDataReceived) {
     app.ports.fileDataReceived.send(errorResult);
+  } else {
+    console.error('fileDataReceived port not found for error');
   }
 }
 
