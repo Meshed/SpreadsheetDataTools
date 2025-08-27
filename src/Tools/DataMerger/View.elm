@@ -6,8 +6,8 @@ module Tools.DataMerger.View exposing (view)
 
 -}
 
-import Html exposing (Html, a, div, h1, p, text)
-import Html.Attributes exposing (attribute, class, href)
+import Html exposing (Html, div, h1, p, text)
+import Html.Attributes exposing (attribute, class)
 
 
 {-| Data Merger placeholder view
@@ -22,11 +22,5 @@ view =
                 [ text "Merge data from two spreadsheets with intelligent conflict resolution." ]
             , p [ class "data-merger__placeholder" ]
                 [ text "This tool will be implemented in a future story." ]
-            , a
-                [ class "data-merger__home-link"
-                , href "/"
-                , attribute "data-testid" "nav-home"
-                ]
-                [ text "← Back to Homepage" ]
             ]
         ]

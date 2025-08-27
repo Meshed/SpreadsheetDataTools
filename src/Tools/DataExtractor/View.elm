@@ -6,8 +6,8 @@ module Tools.DataExtractor.View exposing (view)
 
 -}
 
-import Html exposing (Html, a, div, h1, p, text)
-import Html.Attributes exposing (attribute, class, href)
+import Html exposing (Html, div, h1, p, text)
+import Html.Attributes exposing (attribute, class)
 
 
 {-| Data Extractor placeholder view
@@ -22,11 +22,5 @@ view =
                 [ text "Extract matching records from one spreadsheet based on criteria from another." ]
             , p [ class "data-extractor__placeholder" ]
                 [ text "This tool will be implemented in a future story." ]
-            , a
-                [ class "data-extractor__home-link"
-                , href "/"
-                , attribute "data-testid" "nav-home"
-                ]
-                [ text "← Back to Homepage" ]
             ]
         ]

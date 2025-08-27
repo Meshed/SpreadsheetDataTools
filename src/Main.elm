@@ -1,4 +1,4 @@
-module Main exposing (main, parseUrl, routeToString)
+port module Main exposing (main, parseUrl, routeToString)
 
 import Browser
 import Browser.Navigation as Nav
@@ -6,9 +6,13 @@ import Html exposing (Html, a, div, nav, text)
 import Html.Attributes exposing (attribute, class, href)
 import Pages.Home
 import Pages.NotFound
+import Shared.Components.ErrorDisplay as ErrorDisplay
+import Shared.Components.Loading as Loading
+import Shared.Utils.BrowserDetection as BrowserDetection
 import Tools.DataExtractor.View
 import Tools.DataMerger.View
-import Types.Common exposing (AppError(..), Route(..))
+import Types.Common exposing (Route(..))
+import Types.Errors exposing (AppError(..), BrowserInfo, ErrorReport, LoadingState(..), getErrorSeverity, toUserFriendlyMessage)
 import Url
 import Url.Parser exposing (Parser, oneOf, parse, s, top)
 
@@ -17,12 +21,18 @@ type alias Model =
     { key : Nav.Key
     , route : Route
     , globalError : Maybe AppError
+    , loadingState : LoadingState
+    , browserInfo : Maybe BrowserInfo
     }
 
 
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | GlobalError AppError
+    | ClearError
+    | SetLoadingState LoadingState
+    | BrowserInfoReceived BrowserInfo
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -34,8 +44,10 @@ init _ url key =
     ( { key = key
       , route = route
       , globalError = Nothing
+      , loadingState = NotLoading
+      , browserInfo = Nothing
       }
-    , Cmd.none
+    , setBrowserInfoCmd
     )
 
 
@@ -45,7 +57,9 @@ update msg model =
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    ( model, Nav.pushUrl model.key (Url.toString url) )
+                    ( { model | loadingState = LoadingRoute }
+                    , Nav.pushUrl model.key (Url.toString url)
+                    )
 
                 Browser.External href ->
                     ( model, Nav.load href )
@@ -55,9 +69,49 @@ update msg model =
                 newRoute =
                     parseUrl url
             in
-            ( { model | route = newRoute, globalError = Nothing }
+            ( { model
+                | route = newRoute
+                , globalError = Nothing
+                , loadingState = NotLoading
+              }
             , Cmd.none
             )
+
+        GlobalError error ->
+            ( { model
+                | globalError = Just error
+                , loadingState = NotLoading
+              }
+            , Cmd.none
+            )
+
+        ClearError ->
+            ( { model | globalError = Nothing }
+            , Cmd.none
+            )
+
+        SetLoadingState loadingState ->
+            ( { model | loadingState = loadingState }
+            , Cmd.none
+            )
+
+        BrowserInfoReceived browserInfo ->
+            let
+                compatibilityErrors =
+                    BrowserDetection.checkCompatibility browserInfo
+
+                newModel =
+                    { model | browserInfo = Just browserInfo }
+            in
+            case compatibilityErrors of
+                [] ->
+                    ( newModel, Cmd.none )
+
+                firstError :: _ ->
+                    ( { newModel | globalError = Just firstError }
+                    , Cmd.none
+                    )
+
 
 
 {-| Parse URL to Route
@@ -108,7 +162,7 @@ view model =
     , body =
         [ div [ class "app" ]
             [ viewNavigation model.route
-            , viewMainContent model.route model.globalError
+            , viewMainContent model.route model.globalError model.loadingState
             ]
         ]
     }
@@ -164,7 +218,7 @@ viewNavigation currentRoute =
             , href "/data-extractor"
             , attribute "data-testid" "nav-data-extractor"
             ]
-            [ text "Data Extractor" ]
+            [ text "Extractor" ]
         , a
             [ class
                 ("app__nav-link"
@@ -178,16 +232,19 @@ viewNavigation currentRoute =
             , href "/data-merger"
             , attribute "data-testid" "nav-data-merger"
             ]
-            [ text "Data Merger" ]
+            [ text "Merger" ]
         ]
+
+
 
 
 {-| Main content area based on current route
 -}
-viewMainContent : Route -> Maybe AppError -> Html Msg
-viewMainContent route globalError =
+viewMainContent : Route -> Maybe AppError -> LoadingState -> Html Msg
+viewMainContent route globalError loadingState =
     div [ class "app__content" ]
-        [ case globalError of
+        [ viewLoadingOverlay loadingState
+        , case globalError of
             Just error ->
                 viewError error
 
@@ -207,26 +264,126 @@ viewMainContent route globalError =
         ]
 
 
-{-| Error display component
+{-| Loading overlay display
+-}
+viewLoadingOverlay : LoadingState -> Html Msg
+viewLoadingOverlay loadingState =
+    case loadingState of
+        NotLoading ->
+            text ""
+
+        LoadingRoute ->
+            Loading.view
+                { loadingType = Loading.Overlay
+                , message = "Loading page..."
+                , isVisible = True
+                }
+
+        ProcessingFile ->
+            Loading.view
+                { loadingType = Loading.Spinner
+                , message = "Processing your file..."
+                , isVisible = True
+                }
+
+        GeneratingPreview ->
+            Loading.view
+                { loadingType = Loading.ProgressBar
+                , message = "Generating preview..."
+                , isVisible = True
+                }
+
+        DownloadingFile ->
+            Loading.view
+                { loadingType = Loading.Spinner
+                , message = "Preparing download..."
+                , isVisible = True
+                }
+
+        ValidatingData ->
+            Loading.view
+                { loadingType = Loading.Spinner
+                , message = "Validating data..."
+                , isVisible = True
+                }
+
+
+{-| Enhanced error display using ErrorDisplay component
 -}
 viewError : AppError -> Html Msg
 viewError error =
-    div [ class "app__error" ]
-        [ case error of
-            UrlParsingError message ->
-                text ("URL Parsing Error: " ++ message)
+    let
+        friendlyMessage =
+            toUserFriendlyMessage error
 
-            NavigationError message ->
-                text ("Navigation Error: " ++ message)
+        severity =
+            getErrorSeverity error
 
-            UnknownRouteError message ->
-                text ("Unknown Route Error: " ++ message)
-        ]
+        actions =
+            getErrorActions error
+    in
+    ErrorDisplay.view
+        { severity = severity
+        , title = friendlyMessage.title
+        , message = friendlyMessage.message
+        , actions = actions
+        }
+
+
+{-| Get appropriate error actions based on error type
+-}
+getErrorActions : AppError -> List (ErrorDisplay.ErrorAction Msg)
+getErrorActions error =
+    case error of
+        BrowserCompatibilityError _ ->
+            [ ErrorDisplay.Dismiss ClearError ]
+
+        NetworkError _ ->
+            [ ErrorDisplay.Retry ClearError
+            , ErrorDisplay.Dismiss ClearError
+            ]
+
+        UnexpectedError _ ->
+            [ ErrorDisplay.Restart (GlobalError (NavigationError "Restarting application"))
+            , ErrorDisplay.GoHome ClearError
+            , ErrorDisplay.Dismiss ClearError
+            ]
+
+        _ ->
+            [ ErrorDisplay.Retry ClearError
+            , ErrorDisplay.Dismiss ClearError
+            ]
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    browserInfoReceived BrowserInfoReceived
+
+
+{-| Command to request browser information
+-}
+setBrowserInfoCmd : Cmd Msg
+setBrowserInfoCmd =
+    getBrowserInfo ()
+
+
+
+
+{-| Port to get browser information
+-}
+port getBrowserInfo : () -> Cmd msg
+
+
+{-| Port to receive browser information
+-}
+port browserInfoReceived : (BrowserInfo -> msg) -> Sub msg
+
+
+
+
+{-| Port to report errors for development debugging
+-}
+port reportError : ErrorReport -> Cmd msg
 
 
 main : Program () Model Msg

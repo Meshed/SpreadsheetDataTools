@@ -14,14 +14,14 @@ import Html.Attributes exposing (alt, attribute, class, href, src)
 -}
 view : Html msg
 view =
-    div [ class "homepage", attribute "data-testid" "homepage" ]
+    div [ class "homepage landing", attribute "data-testid" "homepage" ]
         [ div [ class "homepage__header" ]
             [ h1 [ class "homepage__title" ]
                 [ text "Spreadsheet Data Tools" ]
             , p [ class "homepage__subtitle" ]
                 [ text "Privacy-focused tools for comparing, extracting, and merging spreadsheet data" ]
             ]
-        , div [ class "homepage__tools" ]
+        , div [ class "homepage__tools tool-cards" ]
             [ toolCard
                 { title = "Data Extractor"
                 , description = "Extract matching records from one spreadsheet based on criteria from another"

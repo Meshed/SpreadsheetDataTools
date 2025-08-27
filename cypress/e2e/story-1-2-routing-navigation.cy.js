@@ -83,39 +83,35 @@ describe('Story 1.2: Basic Application Shell and Routing', () => {
 
   describe('AC3: Navigation Structure Support', () => {
     it('provides working navigation links between all routes', () => {
-      // Test navigation from homepage to data extractor
-      cy.get('[data-testid="nav-data-extractor"]').first().should('be.visible').click()
+      // Test navigation from homepage to data extractor via tool card
+      cy.get('[data-testid="tool-card-data-extractor"]').first().should('be.visible').click()
       cy.url().should('include', '/data-extractor')
       cy.get('[data-testid="data-extractor-page"]').should('be.visible')
       
-      // Test navigation to data merger
-      cy.get('[data-testid="nav-data-merger"]').first().should('be.visible').click()
-      cy.url().should('include', '/data-merger')
-      cy.get('[data-testid="data-merger-page"]').should('be.visible')
-      
-      // Test navigation back to home
+      // Test navigation back to home from data-extractor
       cy.get('[data-testid="nav-home"]').first().should('be.visible').click()
       cy.url().should('eq', 'http://localhost:8080/')
       cy.get('[data-testid="homepage"]').should('be.visible')
+      
+      // Test navigation to data merger via tool card
+      cy.get('[data-testid="tool-card-data-merger"]').first().should('be.visible').click()
+      cy.url().should('include', '/data-merger')
+      cy.get('[data-testid="data-merger-page"]').should('be.visible')
     })
 
     it('has consistent navigation available from all pages', () => {
       // Verify navigation is available from homepage
       cy.get('[data-testid="nav-home"]').should('be.visible')
-      cy.get('[data-testid="nav-data-extractor"]').should('be.visible') 
-      cy.get('[data-testid="nav-data-merger"]').should('be.visible')
+      cy.get('[data-testid="tool-card-data-extractor"]').should('be.visible') 
+      cy.get('[data-testid="tool-card-data-merger"]').should('be.visible')
       
-      // Navigate to data extractor and verify navigation still available
+      // Navigate to data extractor and verify home navigation still available
       cy.navigateToRoute('data-extractor')
       cy.get('[data-testid="nav-home"]').should('be.visible')
-      cy.get('[data-testid="nav-data-extractor"]').should('be.visible')
-      cy.get('[data-testid="nav-data-merger"]').should('be.visible')
       
-      // Navigate to data merger and verify navigation still available
+      // Navigate to data merger and verify home navigation still available  
       cy.navigateToRoute('data-merger')
       cy.get('[data-testid="nav-home"]').should('be.visible')
-      cy.get('[data-testid="nav-data-extractor"]').should('be.visible')
-      cy.get('[data-testid="nav-data-merger"]').should('be.visible')
     })
 
     it('supports navigation from tool cards on homepage', () => {
@@ -224,7 +220,7 @@ describe('Story 1.2: Basic Application Shell and Routing', () => {
       cy.waitForElmApp()
       
       // Navigate to valid routes after 404
-      cy.get('[data-testid="nav-data-extractor"], [data-testid="error-home-link"]')
+      cy.get('[data-testid="tool-card-data-extractor"], [data-testid="error-home-link"]')
         .first()
         .click()
       
@@ -245,8 +241,10 @@ describe('Story 1.2: Basic Application Shell and Routing', () => {
       
       // Rapid navigation to test race conditions and error handling
       for (let i = 0; i < 3; i++) {
-        cy.get('[data-testid="nav-data-merger"]').click({ force: true })
-        cy.get('[data-testid="nav-data-extractor"]').click({ force: true })
+        cy.get('[data-testid="nav-home"]').click({ force: true })
+        cy.get('[data-testid="tool-card-data-merger"]').click({ force: true })
+        cy.get('[data-testid="nav-home"]').click({ force: true })
+        cy.get('[data-testid="tool-card-data-extractor"]').click({ force: true })
       }
       
       // Verify application still responds correctly

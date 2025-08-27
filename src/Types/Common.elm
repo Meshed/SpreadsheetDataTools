@@ -1,8 +1,8 @@
-module Types.Common exposing (Route(..), AppError(..))
+module Types.Common exposing (Route(..))
 
 {-| Shared type definitions across the application.
 
-@docs Route, AppError
+@docs Route
 
 -}
 
@@ -14,11 +14,3 @@ type Route
     | DataExtractor
     | DataMerger
     | NotFound
-
-
-{-| Global application error types
--}
-type AppError
-    = UrlParsingError String
-    | NavigationError String
-    | UnknownRouteError String
