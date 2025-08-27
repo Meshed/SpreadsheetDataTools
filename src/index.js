@@ -1,5 +1,7 @@
 import { Elm } from './Main.elm';
 import '../assets/styles/main.css';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const app = Elm.Main.init({
   node: document.getElementById('app')
@@ -8,22 +10,19 @@ const app = Elm.Main.init({
 // Port subscriptions for file operations (only if ports exist)
 if (app.ports && app.ports.readExcelFile) {
   app.ports.readExcelFile.subscribe((fileData) => {
-    // File reading implementation will be added in future stories
-    console.log('File reading port called:', fileData);
+    readExcelFile(fileData);
   });
 }
 
 if (app.ports && app.ports.downloadCSV) {
   app.ports.downloadCSV.subscribe(({ filename, content }) => {
-    // CSV download implementation will be added in future stories
-    console.log('CSV download port called:', filename, content);
+    downloadCSV(filename, content);
   });
 }
 
 if (app.ports && app.ports.clearMemory) {
   app.ports.clearMemory.subscribe(() => {
-    // Memory cleanup implementation will be added in future stories
-    console.log('Memory cleanup port called');
+    clearFileMemory();
   });
 }
 
@@ -168,4 +167,192 @@ if (isDevelopment) {
  */
 function generateSessionId() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+// Global variables for memory management
+let fileCache = new Map();
+let fileIdCounter = 0;
+
+/**
+ * Read Excel/CSV file using SheetJS and send result back to Elm
+ * @param {Object} fileData - File object from Elm
+ */
+function readExcelFile(fileData) {
+  try {
+    // Extract file information
+    const file = fileData;
+    const fileName = file.name || 'Unknown';
+    const fileSize = file.size || 0;
+    const fileType = file.type || '';
+    const fileId = generateFileId();
+    
+    // Validate file type
+    const supportedTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+      'text/csv', // .csv
+      'application/csv',
+      'text/comma-separated-values'
+    ];
+    
+    const supportedExtensions = ['.xlsx', '.xls', '.csv'];
+    const hasValidExtension = supportedExtensions.some(ext => 
+      fileName.toLowerCase().endsWith(ext)
+    );
+    
+    const hasValidMimeType = supportedTypes.includes(fileType) || fileType === '';
+    
+    if (!hasValidExtension && !hasValidMimeType) {
+      sendFileError(fileId, fileName, 'Invalid file type', {
+        fileName: fileName,
+        fileType: fileType || 'unknown',
+        supportedTypes: ['.xlsx', '.xls', '.csv']
+      });
+      return;
+    }
+    
+    // Validate file size (50MB limit)
+    const maxSizeBytes = 50 * 1024 * 1024; // 50MB
+    if (fileSize > maxSizeBytes) {
+      sendFileError(fileId, fileName, 'File too large', {
+        fileName: fileName,
+        actualSize: fileSize,
+        maxSize: maxSizeBytes
+      });
+      return;
+    }
+    
+    // Read the file
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Get the first sheet
+        const sheetName = workbook.SheetNames[0];
+        if (!sheetName) {
+          sendFileError(fileId, fileName, 'File contains no readable sheets');
+          return;
+        }
+        
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+          header: 1,
+          defval: '',
+          raw: false
+        });
+        
+        if (!jsonData || jsonData.length === 0) {
+          sendFileError(fileId, fileName, 'File appears to be empty');
+          return;
+        }
+        
+        // Extract headers and rows
+        const headers = jsonData[0] || [];
+        const rows = jsonData.slice(1);
+        
+        // Validate data structure
+        if (headers.length === 0) {
+          sendFileError(fileId, fileName, 'File contains no headers');
+          return;
+        }
+        
+        // Store in cache for memory management
+        const fileResult = {
+          fileId: fileId,
+          fileName: fileName,
+          fileSize: fileSize,
+          headers: headers,
+          rows: rows,
+          rowCount: rows.length,
+          columnCount: headers.length
+        };
+        
+        fileCache.set(fileId, fileResult);
+        
+        // Send success result back to Elm
+        if (app.ports && app.ports.fileDataReceived) {
+          app.ports.fileDataReceived.send(fileResult);
+        }
+        
+      } catch (parseError) {
+        sendFileError(fileId, fileName, 'Failed to parse file: ' + parseError.message);
+      }
+    };
+    
+    reader.onerror = function() {
+      sendFileError(fileId, fileName, 'Failed to read file');
+    };
+    
+    // Start reading the file
+    reader.readAsArrayBuffer(file);
+    
+  } catch (error) {
+    console.error('File reading error:', error);
+    sendFileError('unknown', 'Unknown', 'Unexpected error reading file: ' + error.message);
+  }
+}
+
+/**
+ * Send file processing error back to Elm
+ * @param {string} fileId - File identifier
+ * @param {string} fileName - Original file name
+ * @param {string} errorMessage - Error description
+ * @param {Object} errorDetails - Additional error details
+ */
+function sendFileError(fileId, fileName, errorMessage, errorDetails = {}) {
+  const errorResult = {
+    fileId: fileId,
+    fileName: fileName,
+    success: false,
+    error: errorMessage,
+    errorDetails: errorDetails
+  };
+  
+  if (app.ports && app.ports.fileDataReceived) {
+    app.ports.fileDataReceived.send(errorResult);
+  }
+}
+
+/**
+ * Generate unique file identifier
+ * @returns {string} File ID
+ */
+function generateFileId() {
+  return 'file_' + (++fileIdCounter) + '_' + Date.now();
+}
+
+/**
+ * Download CSV file using FileSaver.js
+ * @param {string} filename - Target filename
+ * @param {string} content - CSV content
+ */
+function downloadCSV(filename, content) {
+  try {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+    saveAs(blob, filename);
+  } catch (error) {
+    console.error('CSV download error:', error);
+  }
+}
+
+/**
+ * Clear file cache to free memory
+ */
+function clearFileMemory() {
+  try {
+    fileCache.clear();
+    fileIdCounter = 0;
+    
+    // Force garbage collection if available
+    if (window.gc) {
+      window.gc();
+    }
+    
+    console.log('File memory cleared successfully');
+  } catch (error) {
+    console.error('Memory cleanup error:', error);
+  }
 }

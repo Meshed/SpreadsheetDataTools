@@ -9,7 +9,8 @@ import Pages.NotFound
 import Shared.Components.ErrorDisplay as ErrorDisplay
 import Shared.Components.Loading as Loading
 import Shared.Utils.BrowserDetection as BrowserDetection
-import Tools.DataExtractor.View
+import Tools.DataExtractor.View as DataExtractorView
+import Tools.DataExtractor.Model as DataExtractorModel
 import Tools.DataMerger.View
 import Types.Common exposing (Route(..))
 import Types.Errors exposing (AppError(..), BrowserInfo, ErrorReport, LoadingState(..), getErrorSeverity, toUserFriendlyMessage)
@@ -23,6 +24,7 @@ type alias Model =
     , globalError : Maybe AppError
     , loadingState : LoadingState
     , browserInfo : Maybe BrowserInfo
+    , dataExtractorModel : DataExtractorModel.Model
     }
 
 
@@ -33,6 +35,7 @@ type Msg
     | ClearError
     | SetLoadingState LoadingState
     | BrowserInfoReceived BrowserInfo
+    | DataExtractorMsg DataExtractorModel.Msg
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -40,14 +43,21 @@ init _ url key =
     let
         route =
             parseUrl url
+
+        ( dataExtractorModel, dataExtractorCmd ) =
+            DataExtractorView.init
     in
     ( { key = key
       , route = route
       , globalError = Nothing
       , loadingState = NotLoading
       , browserInfo = Nothing
+      , dataExtractorModel = dataExtractorModel
       }
-    , setBrowserInfoCmd
+    , Cmd.batch
+        [ setBrowserInfoCmd
+        , Cmd.map DataExtractorMsg dataExtractorCmd
+        ]
     )
 
 
@@ -112,6 +122,15 @@ update msg model =
                     , Cmd.none
                     )
 
+        DataExtractorMsg extractorMsg ->
+            let
+                ( updatedExtractorModel, extractorCmd ) =
+                    DataExtractorView.update extractorMsg model.dataExtractorModel
+            in
+            ( { model | dataExtractorModel = updatedExtractorModel }
+            , Cmd.map DataExtractorMsg extractorCmd
+            )
+
 
 
 {-| Parse URL to Route
@@ -162,7 +181,7 @@ view model =
     , body =
         [ div [ class "app" ]
             [ viewNavigation model.route
-            , viewMainContent model.route model.globalError model.loadingState
+            , viewMainContent model
             ]
         ]
     }
@@ -212,21 +231,21 @@ viewNavigation currentRoute =
 
 {-| Main content area based on current route
 -}
-viewMainContent : Route -> Maybe AppError -> LoadingState -> Html Msg
-viewMainContent route globalError loadingState =
+viewMainContent : Model -> Html Msg
+viewMainContent model =
     div [ class "app__content" ]
-        [ viewLoadingOverlay loadingState
-        , case globalError of
+        [ viewLoadingOverlay model.loadingState
+        , case model.globalError of
             Just error ->
                 viewError error
 
             Nothing ->
-                case route of
+                case model.route of
                     Home ->
                         Pages.Home.view
 
                     DataExtractor ->
-                        Tools.DataExtractor.View.view
+                        Html.map DataExtractorMsg (DataExtractorView.view model.dataExtractorModel)
 
                     DataMerger ->
                         Tools.DataMerger.View.view
@@ -328,8 +347,11 @@ getErrorActions error =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    browserInfoReceived BrowserInfoReceived
+subscriptions model =
+    Sub.batch
+        [ browserInfoReceived BrowserInfoReceived
+        , Sub.map DataExtractorMsg (DataExtractorView.subscriptions model.dataExtractorModel)
+        ]
 
 
 {-| Command to request browser information
