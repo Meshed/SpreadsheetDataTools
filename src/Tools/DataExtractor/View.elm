@@ -10,8 +10,8 @@ import Html exposing (Html, div, h1, h2, p, text)
 import Html.Attributes exposing (attribute, class)
 import Ports
 import Tools.DataExtractor.Model as ExtractorModel exposing (Model, Msg(..), Step(..))
-import Tools.DataExtractor.Update as ExtractorUpdate
 import Tools.DataExtractor.Steps.Upload as Upload
+import Tools.DataExtractor.Update as ExtractorUpdate
 
 
 {-| Initialize Data Extractor model
@@ -93,8 +93,10 @@ viewProgressStep currentIndex ( step, label ) =
         stepClass =
             if stepIndex < currentIndex then
                 "wizard-progress__step wizard-progress__step--completed"
+
             else if stepIndex == currentIndex then
                 "wizard-progress__step wizard-progress__step--active"
+
             else
                 "wizard-progress__step wizard-progress__step--pending"
     in

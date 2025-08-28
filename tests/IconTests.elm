@@ -3,14 +3,15 @@ module IconTests exposing (..)
 {-| Tests for icon functionality across the application
 
 Tests covering icon loading, accessibility, and visual consistency.
+
 -}
 
 import Expect
 import Html exposing (Html)
+import Pages.Home
 import Test exposing (Test, describe, test)
 import Test.Html.Query as Query
 import Test.Html.Selector as Selector
-import Pages.Home
 
 
 suite : Test

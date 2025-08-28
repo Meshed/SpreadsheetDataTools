@@ -9,7 +9,7 @@ module Tools.DataExtractor.Update exposing (update)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
-import Tools.DataExtractor.Model exposing (Model, Msg(..), Step(..), FileData, ValidationError(..))
+import Tools.DataExtractor.Model exposing (FileData, Model, Msg(..), Step(..), ValidationError(..))
 import Types.Errors exposing (AppError(..))
 
 
@@ -21,6 +21,7 @@ update msg model =
         StepChanged step ->
             if Tools.DataExtractor.Model.canProceedToStep step model then
                 ( { model | currentStep = step }, Cmd.none )
+
             else
                 ( model, Cmd.none )
 
@@ -30,6 +31,7 @@ update msg model =
                     { model
                         | masterFileError = Nothing
                         , isProcessing = True
+                        , processingFileType = Just "master"
                     }
             in
             ( updatedModel, Ports.readExcelFile fileValue )
@@ -40,6 +42,7 @@ update msg model =
                     { model
                         | dataFileError = Nothing
                         , isProcessing = True
+                        , processingFileType = Just "data"
                     }
             in
             ( updatedModel, Ports.readExcelFile fileValue )
@@ -81,6 +84,7 @@ update msg model =
             in
             if Tools.DataExtractor.Model.canProceedToStep nextStep model then
                 ( { model | currentStep = nextStep }, Cmd.none )
+
             else
                 ( model, Cmd.none )
 
@@ -107,6 +111,7 @@ update msg model =
                 updatedFields =
                     if selected then
                         fieldName :: model.selectedFields
+
                     else
                         List.filter ((/=) fieldName) model.selectedFields
             in
@@ -130,34 +135,76 @@ handleFileParseResult result model =
                 Ok validFile ->
                     let
                         updatedModel =
-                            if String.contains "master" (String.toLower validFile.fileName) then
-                                { model
-                                    | masterFile = Just validFile
-                                    , masterFileError = Nothing
-                                    , isProcessing = False
-                                }
-                            else
-                                { model
-                                    | dataFile = Just validFile
-                                    , dataFileError = Nothing
-                                    , isProcessing = False
-                                }
+                            case model.processingFileType of
+                                Just "master" ->
+                                    { model
+                                        | masterFile = Just validFile
+                                        , masterFileError = Nothing
+                                        , isProcessing = False
+                                        , processingFileType = Nothing
+                                    }
+
+                                Just "data" ->
+                                    { model
+                                        | dataFile = Just validFile
+                                        , dataFileError = Nothing
+                                        , isProcessing = False
+                                        , processingFileType = Nothing
+                                    }
+
+                                _ ->
+                                    -- Fallback to filename-based detection if processingFileType is somehow lost
+                                    if String.contains "master" (String.toLower validFile.fileName) then
+                                        { model
+                                            | masterFile = Just validFile
+                                            , masterFileError = Nothing
+                                            , isProcessing = False
+                                            , processingFileType = Nothing
+                                        }
+
+                                    else
+                                        { model
+                                            | dataFile = Just validFile
+                                            , dataFileError = Nothing
+                                            , isProcessing = False
+                                            , processingFileType = Nothing
+                                        }
                     in
                     ( updatedModel, Cmd.none )
 
                 Err validationError ->
                     let
                         updatedModel =
-                            if String.contains "master" (getFileNameFromResult result) then
-                                { model
-                                    | masterFileError = Just validationError
-                                    , isProcessing = False
-                                }
-                            else
-                                { model
-                                    | dataFileError = Just validationError
-                                    , isProcessing = False
-                                }
+                            case model.processingFileType of
+                                Just "master" ->
+                                    { model
+                                        | masterFileError = Just validationError
+                                        , isProcessing = False
+                                        , processingFileType = Nothing
+                                    }
+
+                                Just "data" ->
+                                    { model
+                                        | dataFileError = Just validationError
+                                        , isProcessing = False
+                                        , processingFileType = Nothing
+                                    }
+
+                                _ ->
+                                    -- Fallback to filename-based detection if processingFileType is somehow lost
+                                    if String.contains "master" (getFileNameFromResult result) then
+                                        { model
+                                            | masterFileError = Just validationError
+                                            , isProcessing = False
+                                            , processingFileType = Nothing
+                                        }
+
+                                    else
+                                        { model
+                                            | dataFileError = Just validationError
+                                            , isProcessing = False
+                                            , processingFileType = Nothing
+                                        }
                     in
                     ( updatedModel, Cmd.none )
 
@@ -170,16 +217,36 @@ handleFileParseResult result model =
                     FileParsingFailed "Unable to parse file. Please ensure it's a valid Excel or CSV file."
 
                 updatedModel =
-                    if String.contains "master" (String.toLower fileName) then
-                        { model
-                            | masterFileError = Just validationError
-                            , isProcessing = False
-                        }
-                    else
-                        { model
-                            | dataFileError = Just validationError
-                            , isProcessing = False
-                        }
+                    case model.processingFileType of
+                        Just "master" ->
+                            { model
+                                | masterFileError = Just validationError
+                                , isProcessing = False
+                                , processingFileType = Nothing
+                            }
+
+                        Just "data" ->
+                            { model
+                                | dataFileError = Just validationError
+                                , isProcessing = False
+                                , processingFileType = Nothing
+                            }
+
+                        _ ->
+                            -- Fallback to filename-based detection if processingFileType is somehow lost
+                            if String.contains "master" (String.toLower fileName) then
+                                { model
+                                    | masterFileError = Just validationError
+                                    , isProcessing = False
+                                    , processingFileType = Nothing
+                                }
+
+                            else
+                                { model
+                                    | dataFileError = Just validationError
+                                    , isProcessing = False
+                                    , processingFileType = Nothing
+                                }
             in
             ( updatedModel, Cmd.none )
 
@@ -220,10 +287,13 @@ validateFileData fileData =
     in
     if fileData.fileSize > maxFileSize then
         Err (FileSizeExceeded fileData.fileSize maxFileSize)
+
     else if not hasValidExtension then
         Err (InvalidFileType fileData.fileName supportedExtensions)
+
     else if fileData.rowCount == 0 then
         Err (FileParsingFailed "File appears to be empty or contains no readable data.")
+
     else
         Ok fileData
 

@@ -9,8 +9,8 @@ import Pages.NotFound
 import Shared.Components.ErrorDisplay as ErrorDisplay
 import Shared.Components.Loading as Loading
 import Shared.Utils.BrowserDetection as BrowserDetection
-import Tools.DataExtractor.View as DataExtractorView
 import Tools.DataExtractor.Model as DataExtractorModel
+import Tools.DataExtractor.View as DataExtractorView
 import Tools.DataMerger.View
 import Types.Common exposing (Route(..))
 import Types.Errors exposing (AppError(..), BrowserInfo, ErrorReport, LoadingState(..), getErrorSeverity, toUserFriendlyMessage)
@@ -132,7 +132,6 @@ update msg model =
             )
 
 
-
 {-| Parse URL to Route
 -}
 parseUrl : Url.Url -> Route
@@ -225,8 +224,6 @@ viewNavigation currentRoute =
             ]
             [ text "Home" ]
         ]
-
-
 
 
 {-| Main content area based on current route
@@ -361,8 +358,6 @@ setBrowserInfoCmd =
     getBrowserInfo ()
 
 
-
-
 {-| Port to get browser information
 -}
 port getBrowserInfo : () -> Cmd msg
@@ -371,8 +366,6 @@ port getBrowserInfo : () -> Cmd msg
 {-| Port to receive browser information
 -}
 port browserInfoReceived : (BrowserInfo -> msg) -> Sub msg
-
-
 
 
 {-| Port to report errors for development debugging

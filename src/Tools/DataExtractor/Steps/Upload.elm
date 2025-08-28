@@ -6,6 +6,7 @@ module Tools.DataExtractor.Steps.Upload exposing (view)
 
 -}
 
+import Char
 import Html exposing (Html, button, div, h2, input, label, p, span, text)
 import Html.Attributes exposing (accept, attribute, class, disabled, id, multiple, type_)
 import Html.Events exposing (on, onClick, preventDefaultOn)
@@ -13,8 +14,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Shared.Components.ErrorDisplay as ErrorDisplay
 import Shared.Components.Loading as Loading
-import Tools.DataExtractor.Model exposing (Model, Msg(..), ValidationError(..), Step(..))
-import Char
+import Tools.DataExtractor.Model exposing (Model, Msg(..), Step(..), ValidationError(..))
 
 
 {-| Helper function to convert string to title case
@@ -23,13 +23,15 @@ toTitleCase : String -> String
 toTitleCase str =
     str
         |> String.words
-        |> List.map (\word ->
-            case String.uncons word of
-                Just (first, rest) ->
-                    String.fromChar (Char.toUpper first) ++ String.toLower rest
-                Nothing ->
-                    word
-           )
+        |> List.map
+            (\word ->
+                case String.uncons word of
+                    Just ( first, rest ) ->
+                        String.fromChar (Char.toUpper first) ++ String.toLower rest
+
+                    Nothing ->
+                        word
+            )
         |> String.join " "
 
 
@@ -78,6 +80,7 @@ viewMasterUploadArea model =
                     [ div [ class "upload-area__file-info" ]
                         [ text ("Master Spreadsheet: " ++ fileData.fileName ++ " (" ++ String.fromInt fileData.rowCount ++ " rows)") ]
                     ]
+
                 Nothing ->
                     []
 
@@ -87,6 +90,7 @@ viewMasterUploadArea model =
                     [ div [ class "upload-area__error" ]
                         [ viewValidationError error ]
                     ]
+
                 Nothing ->
                     []
     in
@@ -108,6 +112,7 @@ viewDataUploadArea model =
                     [ div [ class "upload-area__file-info" ]
                         [ text ("Data Spreadsheet: " ++ fileData.fileName ++ " (" ++ String.fromInt fileData.rowCount ++ " rows)") ]
                     ]
+
                 Nothing ->
                     []
 
@@ -117,6 +122,7 @@ viewDataUploadArea model =
                     [ div [ class "upload-area__error" ]
                         [ viewValidationError error ]
                     ]
+
                 Nothing ->
                     []
     in
@@ -142,16 +148,19 @@ viewUploadZone fileType maybeFile maybeError isProcessing =
             "upload-zone"
                 ++ (if hasFile then
                         " upload-zone--has-file"
+
                     else
                         ""
                    )
                 ++ (if hasError then
                         " upload-zone--error"
+
                     else
                         ""
                    )
                 ++ (if isProcessing then
                         " upload-zone--processing"
+
                     else
                         ""
                    )
@@ -159,6 +168,7 @@ viewUploadZone fileType maybeFile maybeError isProcessing =
         fileSelectMsg =
             if fileType == "master" then
                 MasterFileSelected
+
             else
                 DataFileSelected
     in
@@ -196,8 +206,10 @@ viewUploadZone fileType maybeFile maybeError isProcessing =
             ]
             [ if isProcessing then
                 viewProcessingState
+
               else if hasFile then
                 viewSuccessState fileType
+
               else
                 viewEmptyState fileType
             ]
@@ -230,7 +242,13 @@ viewSuccessState fileType =
                 [ text (toTitleCase (String.replace "-" " " fileType) ++ " spreadsheet uploaded successfully") ]
             , button
                 [ class "upload-zone__clear-button"
-                , onClick (if fileType == "master" then ClearMasterFile else ClearDataFile)
+                , onClick
+                    (if fileType == "master" then
+                        ClearMasterFile
+
+                     else
+                        ClearDataFile
+                    )
                 , attribute "data-testid" ("clear-" ++ fileType ++ "-file")
                 ]
                 [ text "Remove file" ]
@@ -335,8 +353,15 @@ viewNavigationButtons model =
             ]
             [ text "Start Over" ]
         , button
-            [ class ("wizard-navigation__button wizard-navigation__button--primary" ++ 
-                    if canProceed then "" else " wizard-navigation__button--disabled")
+            [ class
+                ("wizard-navigation__button wizard-navigation__button--primary"
+                    ++ (if canProceed then
+                            ""
+
+                        else
+                            " wizard-navigation__button--disabled"
+                       )
+                )
             , onClick NextStep
             , disabled (not canProceed)
             , attribute "data-testid" "next-step-button"
@@ -350,11 +375,13 @@ viewNavigationButtons model =
 dropDecoderCustom : (Encode.Value -> Msg) -> Decode.Decoder { message : Msg, stopPropagation : Bool, preventDefault : Bool }
 dropDecoderCustom toMsg =
     Decode.at [ "dataTransfer", "files" ] (Decode.index 0 fileDecoder)
-        |> Decode.map (\file -> 
-            { message = toMsg file
-            , stopPropagation = True
-            , preventDefault = True
-            })
+        |> Decode.map
+            (\file ->
+                { message = toMsg file
+                , stopPropagation = True
+                , preventDefault = True
+                }
+            )
 
 
 {-| File drop event decoder

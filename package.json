@@ -14,12 +14,12 @@
     "test:e2e:ci": "start-server-and-test dev http://localhost:8080 test:e2e"
   },
   "dependencies": {
+    "cypress": "^15.0.0",
     "file-saver": "2.0.5",
     "xlsx": "0.18.5"
   },
   "devDependencies": {
     "css-loader": "^6.8.1",
-    "cypress": "^15.0.0",
     "elm": "^0.19.1-5",
     "elm-hot-webpack-loader": "^1.1.8",
     "elm-test": "^0.19.1-revision12",

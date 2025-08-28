@@ -90,3 +90,54 @@ Cypress.Commands.add('triggerTestError', (errorType = 'generic') => {
     cy.log(`Triggering test error of type: ${errorType}`)
   })
 })
+
+// Custom command to upload file to specific Data Extractor upload zone
+Cypress.Commands.add('uploadFileToZone', (zoneType, fileName, fileFixture = null) => {
+  const testId = `upload-zone-${zoneType}`
+  const inputSelector = `[data-testid="${testId}"] input[type="file"]`
+  
+  if (fileFixture) {
+    // Use provided fixture
+    cy.fixture(fileFixture, 'binary').then((fileContent) => {
+      const blob = Cypress.Blob.binaryStringToBlob(fileContent)
+      const file = new File([blob], fileName, { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      })
+      
+      cy.get(inputSelector).selectFile({ contents: file, fileName: fileName }, { force: true })
+    })
+  } else {
+    // Create a simple test file
+    const testContent = 'col1,col2\nvalue1,value2\n'
+    cy.get(inputSelector).selectFile({ 
+      contents: Cypress.Buffer.from(testContent), 
+      fileName: fileName,
+      mimeType: 'text/csv'
+    }, { force: true })
+  }
+})
+
+// Custom command to verify file upload success in specific zone
+Cypress.Commands.add('verifyFileUploadSuccess', (zoneType, fileName) => {
+  const zoneSelector = `[data-testid="upload-zone-${zoneType}"]`
+  const fileTypeLabel = zoneType === 'master' ? 'Master' : 'Data'
+  
+  cy.get(zoneSelector)
+    .should('contain.text', `${fileTypeLabel} spreadsheet uploaded successfully`)
+  
+  cy.get(`.upload-area--${zoneType} .upload-area__file-info`)
+    .should('be.visible')
+    .should('contain.text', `${fileTypeLabel} Spreadsheet`)
+    .should('contain.text', fileName)
+})
+
+// Custom command to verify file upload error in specific zone
+Cypress.Commands.add('verifyFileUploadError', (zoneType, errorMessage = null) => {
+  const zoneSelector = `.upload-area--${zoneType} .upload-area__error`
+  
+  cy.get(zoneSelector).should('be.visible')
+  
+  if (errorMessage) {
+    cy.get(zoneSelector).should('contain.text', errorMessage)
+  }
+})

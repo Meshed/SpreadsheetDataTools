@@ -55,6 +55,7 @@ type alias Model =
     , masterFileError : Maybe ValidationError
     , dataFileError : Maybe ValidationError
     , isProcessing : Bool
+    , processingFileType : Maybe String
     , matchConfig : Maybe MatchConfig
     , processedData : Maybe ProcessedData
     , selectedFields : List String
@@ -110,6 +111,7 @@ init =
     , masterFileError = Nothing
     , dataFileError = Nothing
     , isProcessing = False
+    , processingFileType = Nothing
     , matchConfig = Nothing
     , processedData = Nothing
     , selectedFields = []

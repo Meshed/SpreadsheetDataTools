@@ -3,14 +3,15 @@ module IconLayoutTests exposing (..)
 {-| Tests for icon layout behavior and horizontal positioning
 
 Tests covering the flexbox layout implementation for icon-title horizontal alignment.
+
 -}
 
 import Expect
 import Html exposing (Html)
+import Pages.Home
 import Test exposing (Test, describe, test)
 import Test.Html.Query as Query
 import Test.Html.Selector as Selector
-import Pages.Home
 
 
 suite : Test
@@ -149,7 +150,8 @@ suite =
                         |> Query.each
                             (\header ->
                                 let
-                                    children = header |> Query.children []
+                                    children =
+                                        header |> Query.children []
                                 in
                                 Expect.all
                                     [ \_ -> children |> Query.index 0 |> Query.has [ Selector.tag "img" ]

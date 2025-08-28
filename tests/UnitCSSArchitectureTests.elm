@@ -8,9 +8,8 @@ import Test exposing (..)
 
 Test scenarios covering CSS directory structure, file existence,
 BEM naming conventions, and build process integration.
+
 -}
-
-
 suite : Test
 suite =
     describe "CSS Architecture Tests"

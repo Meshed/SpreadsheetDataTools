@@ -8,9 +8,8 @@ import Test exposing (..)
 
 Test scenarios covering CSS import resolution, loading order,
 cross-component variable inheritance, and hot reload functionality.
+
 -}
-
-
 suite : Test
 suite =
     describe "CSS Build Process Integration Tests"

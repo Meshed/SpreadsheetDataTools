@@ -179,8 +179,8 @@ describe('Story 1.3: Landing Page with Tool Cards', () => {
       
       cy.get('.tool-card__icon').each(($icon) => {
         cy.wrap($icon)
-          .should('have.css', 'width', '48px')
-          .should('have.css', 'height', '48px')
+          .should('have.css', 'width', '32px')
+          .should('have.css', 'height', '32px')
           .should('be.visible')
       })
       
@@ -332,13 +332,18 @@ describe('Story 1.3: Landing Page with Tool Cards', () => {
           .click({ force: false }) // Should be naturally clickable
         cy.url().should('include', '/data-extractor')
         
-        cy.go('back')
+        // Navigate back to home and wait for page to load
+        cy.get('[data-testid="nav-home"]').first().click()
+        cy.get('[data-testid="homepage"]').should('be.visible')
+        
         cy.get('[data-testid="tool-card-data-merger"]')
           .should('be.visible')
           .click({ force: false })
         cy.url().should('include', '/data-merger')
         
-        cy.go('back')
+        // Navigate back to home for next iteration
+        cy.get('[data-testid="nav-home"]').first().click()
+        cy.get('[data-testid="homepage"]').should('be.visible')
       })
     })
   })

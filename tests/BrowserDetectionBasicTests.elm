@@ -1,9 +1,9 @@
 module BrowserDetectionBasicTests exposing (..)
 
 import Expect
-import Test exposing (..)
 import Shared.Utils.BrowserDetection as BrowserDetection
-import Types.Errors exposing (BrowserInfo, AppError(..))
+import Test exposing (..)
+import Types.Errors exposing (AppError(..), BrowserInfo)
 
 
 suite : Test
@@ -14,13 +14,11 @@ suite =
                 \_ ->
                     BrowserDetection.isDesktopScreen 1024
                         |> Expect.equal True
-            
             , test "rejects mobile screen correctly" <|
                 \_ ->
                     BrowserDetection.isDesktopScreen 768
                         |> Expect.equal False
             ]
-        
         , describe "Browser Compatibility"
             [ test "passes compatibility for good browser" <|
                 \_ ->
@@ -38,7 +36,6 @@ suite =
                     BrowserDetection.checkCompatibility goodBrowser
                         |> List.length
                         |> Expect.equal 0
-            
             , test "fails compatibility for mobile" <|
                 \_ ->
                     let
@@ -56,12 +53,12 @@ suite =
                         |> List.length
                         |> Expect.greaterThan 0
             ]
-        
         , describe "Supported Browsers"
             [ test "includes major browsers" <|
                 \_ ->
                     let
-                        supportedText = BrowserDetection.getSupportedBrowsers ()
+                        supportedText =
+                            BrowserDetection.getSupportedBrowsers ()
                     in
                     String.contains "Chrome" supportedText
                         |> Expect.equal True

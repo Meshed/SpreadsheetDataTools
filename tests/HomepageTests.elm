@@ -4,14 +4,15 @@ module HomepageTests exposing (..)
 
 Tests covering basic structure and functionality of the homepage component.
 This focuses on testing the view function's output structure.
+
 -}
 
 import Expect
 import Html exposing (Html)
+import Pages.Home
 import Test exposing (Test, describe, test)
 import Test.Html.Query as Query
 import Test.Html.Selector as Selector
-import Pages.Home
 
 
 suite : Test
@@ -146,7 +147,8 @@ suite =
                         [ \_ -> children |> Query.index 0 |> Query.has [ Selector.class "homepage__header" ]
                         , \_ -> children |> Query.index 1 |> Query.has [ Selector.class "privacy-banner" ]
                         , \_ -> children |> Query.index 2 |> Query.has [ Selector.class "homepage__tools" ]
-                        ] ()
+                        ]
+                        ()
             ]
         , describe "Navigation Structure Tests"
             [ test "tool cards are implemented as anchor links" <|

@@ -16,8 +16,11 @@ suite =
         , test "list operations function properly" <|
             \_ ->
                 let
-                    numbers = [1, 2, 3]
-                    doubled = List.map (\x -> x * 2) numbers
+                    numbers =
+                        [ 1, 2, 3 ]
+
+                    doubled =
+                        List.map (\x -> x * 2) numbers
                 in
-                Expect.equal [2, 4, 6] doubled
+                Expect.equal [ 2, 4, 6 ] doubled
         ]
