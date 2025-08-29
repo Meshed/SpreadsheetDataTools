@@ -22,6 +22,7 @@ view model =
             [ text "Step 2 of 5" ]
         , div [ class "configure-step__explanation" ]
             [ p [] [ text "Columns match by selection order - 1st selected master column matches 1st selected data column, etc." ] ]
+        , Html.map ConfigureMsg (renderValidationError (validateCurrentSelections model.selectedMasterColumns model.selectedDataColumns))
         , div [ class "configure-step__content" ]
             [ div [ class "configure-step__columns" ]
                 [ Html.map ConfigureMsg (renderMasterColumns model.masterFile model.selectedMasterColumns)
@@ -30,7 +31,6 @@ view model =
             , Html.map ConfigureMsg (renderMatchingPairs model.selectedMasterColumns model.selectedDataColumns)
             , Html.map ConfigureMsg (renderFuzzyOption (getFuzzyMatchingEnabled model.matchConfig))
             , Html.map ConfigureMsg (renderSamplePreview model.masterFile model.dataFile model.selectedMasterColumns model.selectedDataColumns)
-            , Html.map ConfigureMsg (renderValidationError (validateCurrentSelections model.selectedMasterColumns model.selectedDataColumns))
             ]
         , renderNavigationButtons model.selectedMasterColumns model.selectedDataColumns
         ]

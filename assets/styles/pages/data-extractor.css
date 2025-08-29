@@ -478,7 +478,7 @@
   border: 2px solid var(--color-info);
   border-radius: 8px;
   padding: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-sm);
   text-align: center;
 }
 
@@ -840,7 +840,7 @@
   text-align: center;
   color: var(--color-error-dark);
   font-weight: 600;
-  margin-top: var(--spacing-md);
+  margin: var(--spacing-sm) 0 var(--spacing-lg) 0;
 }
 
 /* Drag and Drop Support */
