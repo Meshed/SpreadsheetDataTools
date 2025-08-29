@@ -3,6 +3,21 @@ import '../assets/styles/main.css';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
+// Initialize console.error tracking for tests
+if (typeof window !== 'undefined') {
+  if (!window.console.error.calls) {
+    const originalError = window.console.error;
+    window.console.error = function(...args) {
+      if (!window.console.error.calls) {
+        window.console.error.calls = [];
+      }
+      window.console.error.calls.push(args);
+      return originalError.apply(console, args);
+    };
+    window.console.error.calls = [];
+  }
+}
+
 const app = Elm.Main.init({
   node: document.getElementById('app')
 });

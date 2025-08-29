@@ -9,7 +9,7 @@ module Tools.DataExtractor.Update exposing (update)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
-import Tools.DataExtractor.Model exposing (FileData, Model, Msg(..), Step(..), ValidationError(..))
+import Tools.DataExtractor.Model exposing (ConfigureMsg(..), FileData, Model, Msg(..), Step(..), ValidationError(..))
 import Types.Errors exposing (AppError(..))
 
 
@@ -105,6 +105,9 @@ update msg model =
         ConfigureMatching matchConfig ->
             -- Future implementation for match configuration
             ( { model | matchConfig = Just matchConfig }, Cmd.none )
+
+        ConfigureMsg configureMsg ->
+            updateConfigureStep configureMsg model
 
         SelectField fieldName selected ->
             let
@@ -350,3 +353,96 @@ getPreviousStep currentStep =
 
         Download ->
             SelectFields
+
+
+{-| Update configure step state
+-}
+updateConfigureStep : ConfigureMsg -> Model -> ( Model, Cmd Msg )
+updateConfigureStep configureMsg model =
+    case configureMsg of
+        SelectMasterColumn column ->
+            if List.member column model.selectedMasterColumns then
+                ( model, Cmd.none )
+
+            else
+                ( { model | selectedMasterColumns = model.selectedMasterColumns ++ [ column ] }, Cmd.none )
+
+        DeselectMasterColumn column ->
+            ( { model | selectedMasterColumns = List.filter ((/=) column) model.selectedMasterColumns }, Cmd.none )
+
+        SelectDataColumn column ->
+            if List.member column model.selectedDataColumns then
+                ( model, Cmd.none )
+
+            else
+                ( { model | selectedDataColumns = model.selectedDataColumns ++ [ column ] }, Cmd.none )
+
+        DeselectDataColumn column ->
+            ( { model | selectedDataColumns = List.filter ((/=) column) model.selectedDataColumns }, Cmd.none )
+
+        ReorderSelection fromIndex toIndex ->
+            let
+                reorderedMaster =
+                    reorderList fromIndex toIndex model.selectedMasterColumns
+
+                reorderedData =
+                    reorderList fromIndex toIndex model.selectedDataColumns
+            in
+            ( { model
+                | selectedMasterColumns = reorderedMaster
+                , selectedDataColumns = reorderedData
+              }
+            , Cmd.none
+            )
+
+        ToggleFuzzyMatching enabled ->
+            let
+                updatedMatchConfig =
+                    case model.matchConfig of
+                        Just config ->
+                            Just { config | useFuzzyMatch = enabled }
+
+                        Nothing ->
+                            Just { masterColumns = [], dataColumns = [], useFuzzyMatch = enabled }
+            in
+            ( { model | matchConfig = updatedMatchConfig }, Cmd.none )
+
+        ValidateSelections ->
+            -- Validation is handled in the view
+            ( model, Cmd.none )
+
+
+{-| Reorder list by moving item from fromIndex to toIndex
+-}
+reorderList : Int -> Int -> List a -> List a
+reorderList fromIndex toIndex list =
+    let
+        listLength =
+            List.length list
+
+        validFromIndex =
+            max 0 (min fromIndex (listLength - 1))
+
+        validToIndex =
+            max 0 (min toIndex (listLength - 1))
+    in
+    if validFromIndex == validToIndex then
+        list
+
+    else
+        case List.drop validFromIndex list |> List.head of
+            Nothing ->
+                list
+
+            Just item ->
+                let
+                    listWithoutItem =
+                        List.take validFromIndex list ++ List.drop (validFromIndex + 1) list
+
+                    beforeTarget =
+                        List.take validToIndex listWithoutItem
+
+                    afterTarget =
+                        List.drop validToIndex listWithoutItem
+                in
+                beforeTarget ++ [ item ] ++ afterTarget

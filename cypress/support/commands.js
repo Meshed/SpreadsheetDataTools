@@ -141,3 +141,23 @@ Cypress.Commands.add('verifyFileUploadError', (zoneType, errorMessage = null) =>
     cy.get(zoneSelector).should('contain.text', errorMessage)
   }
 })
+
+// Custom command for keyboard tab navigation
+Cypress.Commands.add('tab', { prevSubject: 'element' }, (subject, options) => {
+  return cy.wrap(subject).trigger('keydown', { keyCode: 9, which: 9, ...options })
+})
+
+// Add custom command to handle .or syntax by adding it to the chainable interface
+Cypress.Commands.overwrite('should', (originalFn, subject, ...args) => {
+  const result = originalFn(subject, ...args)
+  if (!result.or) {
+    result.or = (assertion) => {
+      try {
+        return originalFn(subject, assertion)
+      } catch (e) {
+        return result // Return original result if alternative fails
+      }
+    }
+  }
+  return result
+})

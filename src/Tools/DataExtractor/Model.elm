@@ -1,11 +1,11 @@
 module Tools.DataExtractor.Model exposing
-    ( Model, Msg(..), Step(..), FileData, ValidationError(..)
+    ( Model, Msg(..), ConfigureMsg(..), Step(..), FileData, ValidationError(..)
     , init, stepToString, canProceedToStep, getStepIndex
     )
 
 {-| Data Extractor tool model and types.
 
-@docs Model, Msg, Step, FileData, ValidationError
+@docs Model, Msg, ConfigureMsg, Step, FileData, ValidationError
 @docs init, stepToString, canProceedToStep, getStepIndex
 
 -}
@@ -59,6 +59,8 @@ type alias Model =
     , matchConfig : Maybe MatchConfig
     , processedData : Maybe ProcessedData
     , selectedFields : List String
+    , selectedMasterColumns : List String
+    , selectedDataColumns : List String
     , privacyNoticeShown : Bool
     }
 
@@ -81,6 +83,18 @@ type alias ProcessedData =
     }
 
 
+{-| Configure step messages
+-}
+type ConfigureMsg
+    = SelectMasterColumn String
+    | DeselectMasterColumn String
+    | SelectDataColumn String
+    | DeselectDataColumn String
+    | ReorderSelection Int Int
+    | ToggleFuzzyMatching Bool
+    | ValidateSelections
+
+
 {-| Data Extractor messages
 -}
 type Msg
@@ -96,6 +110,7 @@ type Msg
     | StartOver
     | ProcessFiles
     | ConfigureMatching MatchConfig
+    | ConfigureMsg ConfigureMsg
     | SelectField String Bool
     | GenerateCSV
     | DownloadComplete
@@ -115,6 +130,8 @@ init =
     , matchConfig = Nothing
     , processedData = Nothing
     , selectedFields = []
+    , selectedMasterColumns = []
+    , selectedDataColumns = []
     , privacyNoticeShown = True
     }
 
@@ -152,7 +169,9 @@ canProceedToStep step model =
             model.masterFile /= Nothing && model.dataFile /= Nothing
 
         Preview ->
-            canProceedToStep Configure model && model.matchConfig /= Nothing
+            canProceedToStep Configure model
+                && not (List.isEmpty model.selectedMasterColumns)
+                && not (List.isEmpty model.selectedDataColumns)
 
         SelectFields ->
             canProceedToStep Preview model && model.processedData /= Nothing

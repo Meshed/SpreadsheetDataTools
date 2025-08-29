@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Navigation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-step { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        button { margin: 5px; padding: 8px 16px; }
+    </style>
+</head>
+<body>
+    <h1>Data Extractor Navigation Test</h1>
+    
+    <div class="test-step">
+        <h3>Step 1: Can you navigate to the Data Extractor?</h3>
+        <p>Open <a href="http://localhost:8080" target="_blank">http://localhost:8080</a></p>
+        <p>Click on "Data Extractor" tool card</p>
+    </div>
+    
+    <div class="test-step">
+        <h3>Step 2: Are you on the Upload Files step?</h3>
+        <p>You should see "Step 1 of 5: Upload Files" at the top</p>
+        <p>You should see two upload zones: "Master" and "Data"</p>
+    </div>
+    
+    <div class="test-step">
+        <h3>Step 3: Upload files to both zones</h3>
+        <p>Upload any Excel or CSV file to both Master and Data zones</p>
+        <p>The "Next: Configure Matching" button should become enabled</p>
+    </div>
+    
+    <div class="test-step">
+        <h3>Step 4: Click Next to Configure step</h3>
+        <p>Click "Next: Configure Matching" button</p>
+        <p>You should now see "Step 2 of 5: Configure Matching"</p>
+    </div>
+    
+    <div class="test-step">
+        <h3>Step 5: Look for Navigation Buttons on Configure step</h3>
+        <p>Scroll to the bottom of the Configure step</p>
+        <p>You should see:</p>
+        <ul>
+            <li>Previous: Upload Files (always enabled)</li>
+            <li>Next: Preview Results (disabled until you select columns)</li>
+        </ul>
+    </div>
+    
+    <div class="test-step">
+        <h3>Step 6: Select columns to enable Next button</h3>
+        <p>Click on at least one column from Master Spreadsheet</p>
+        <p>Click on at least one column from Data Spreadsheet</p>
+        <p>The "Next: Preview Results" button should become enabled</p>
+    </div>
+</body>
+</html>

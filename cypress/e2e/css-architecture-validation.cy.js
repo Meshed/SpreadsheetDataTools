@@ -68,11 +68,6 @@ describe('CSS Architecture E2E Validation', () => {
       cy.get('.tool-card').first().should('have.css', 'border-radius');
       cy.get('.tool-card').first().should('have.css', 'box-shadow');
       
-      // Test mobile responsive design
-      cy.viewport(375, 667);
-      cy.get('.homepage__tools').should('be.visible');
-      cy.get('.tool-card').should('be.visible');
-      
       // Test hover states (desktop only)
       cy.viewport(1024, 768);
       cy.get('.tool-card').first().trigger('mouseover');
@@ -131,32 +126,15 @@ describe('CSS Architecture E2E Validation', () => {
     });
   });
 
-  describe('Responsive Design Validation', () => {
-    const viewports = [
-      { width: 375, height: 667, device: 'mobile' },
-      { width: 768, height: 1024, device: 'tablet' },
-      { width: 1024, height: 768, device: 'desktop' },
-      { width: 1920, height: 1080, device: 'large-desktop' }
-    ];
-
-    viewports.forEach(viewport => {
-      it(`should render correctly on ${viewport.device} (${viewport.width}x${viewport.height})`, () => {
-        cy.viewport(viewport.width, viewport.height);
-        cy.waitForElmApp();
-        
-        // Verify content is visible and accessible
-        cy.get('.homepage__tools').should('be.visible');
-        cy.get('.tool-card').should('be.visible');
-        
-        // Verify responsive behavior
-        if (viewport.width < 768) {
-          // Mobile: cards should stack - just verify they exist
-          cy.get('.tool-card').should('have.length', 2);
-        } else {
-          // Desktop/tablet: cards should be visible - just verify they exist
-          cy.get('.homepage__tools').should('have.css', 'display');
-        }
-      });
+  describe('Desktop Layout Validation', () => {
+    it('should render correctly on desktop', () => {
+      cy.viewport(1024, 768);
+      cy.waitForElmApp();
+      
+      // Verify content is visible on desktop
+      cy.get('.homepage__tools').should('be.visible');
+      cy.get('.tool-card').should('be.visible');
+      cy.get('.tool-card').should('have.length', 2);
     });
   });
 

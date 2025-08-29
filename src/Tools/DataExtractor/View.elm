@@ -10,6 +10,7 @@ import Html exposing (Html, div, h1, h2, p, text)
 import Html.Attributes exposing (attribute, class)
 import Ports
 import Tools.DataExtractor.Model as ExtractorModel exposing (Model, Msg(..), Step(..))
+import Tools.DataExtractor.Steps.Configure as Configure
 import Tools.DataExtractor.Steps.Upload as Upload
 import Tools.DataExtractor.Update as ExtractorUpdate
 
@@ -120,7 +121,7 @@ viewCurrentStep model =
             Upload.view model
 
         Configure ->
-            viewPlaceholderStep "Configure Matching" "Configure how records should be matched between spreadsheets."
+            Configure.view model
 
         Preview ->
             viewPlaceholderStep "Preview Results" "Preview the matched records before selecting output fields."

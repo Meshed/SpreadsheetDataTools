@@ -1521,7 +1521,6 @@ viewErrorMessage : AppError -> Html Msg
 viewErrorMessage error =
     div 
         [ class "error-container"
-        , attribute "role" "alert"
         ]
         [ div [ class "error-icon" ] [ text "⚠️" ]
         , div [ class "error-content" ]
@@ -1574,7 +1573,6 @@ viewSuccessMessage : String -> Html Msg
 viewSuccessMessage message =
     div 
         [ class "success-container"
-        , attribute "role" "status"
         ]
         [ div [ class "success-icon" ] [ text "✅" ]
         , div [ class "success-message" ] [ text message ]
@@ -1669,7 +1667,6 @@ viewHelpModal topic =
                 , button 
                     [ class "help-modal__close"
                     , onClick CloseHelp
-                    , attribute "aria-label" "Close help"
                     ]
                     [ text "×" ]
                 ]
