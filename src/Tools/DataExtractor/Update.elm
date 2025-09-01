@@ -521,6 +521,41 @@ updatePreviewStep previewMsg model =
             , Cmd.none
             )
 
+        -- Memory Management Messages
+        CheckMemoryUsage ->
+            let
+                currentMemory = calculateCurrentMemoryUsage model
+                updatedModel = 
+                    { model 
+                        | memoryUsage = currentMemory
+                        , showMemoryWarning = Tools.DataExtractor.Model.shouldShowMemoryWarning { model | memoryUsage = currentMemory }
+                        , lastMemoryCheck = 0.0 -- Would be Time.now in real implementation
+                    }
+            in
+            ( updatedModel, Cmd.none )
+
+        MemoryUsageUpdated newUsage ->
+            ( { model 
+                | memoryUsage = newUsage
+                , showMemoryWarning = newUsage >= model.memoryWarningThreshold
+              }
+            , Cmd.none
+            )
+
+        ClearPreviewData ->
+            ( { model 
+                | previewData = Nothing
+                , memoryUsage = max 0 (model.memoryUsage - estimatePreviewDataMemory model.previewData)
+              }
+            , Cmd.none
+            )
+
+        TriggerMemoryCleanup ->
+            let
+                cleanedModel = Tools.DataExtractor.Model.clearLargeDataStructures model
+            in
+            ( cleanedModel, Cmd.none )
+
 
 {-| Convert column names to column indices using file headers
 -}
@@ -539,3 +574,63 @@ columnNamesToIndices columnNames maybeFileData =
                         |> List.head
                         |> Maybe.map Tuple.first
                    )
+
+
+-- MEMORY MANAGEMENT HELPER FUNCTIONS
+
+
+{-| Calculate current memory usage of the model
+-}
+calculateCurrentMemoryUsage : Model -> Int
+calculateCurrentMemoryUsage model =
+    let
+        masterFileMemory = 
+            case model.masterFile of
+                Just file -> Tools.DataExtractor.Model.estimateFileDataMemory file
+                Nothing -> 0
+        
+        dataFileMemory = 
+            case model.dataFile of
+                Just file -> Tools.DataExtractor.Model.estimateFileDataMemory file
+                Nothing -> 0
+        
+        previewDataMemory = estimatePreviewDataMemory model.previewData
+        processedDataMemory = estimateProcessedDataMemory model.processedData
+    in
+    masterFileMemory + dataFileMemory + previewDataMemory + processedDataMemory
+
+
+{-| Estimate memory usage of preview data
+-}
+estimatePreviewDataMemory : Maybe Tools.DataExtractor.Model.ProcessedData -> Int
+estimatePreviewDataMemory maybeData =
+    case maybeData of
+        Nothing -> 0
+        Just data ->
+            let
+                recordsMemory = 
+                    data.matchedRecords
+                        |> List.map (\record -> 
+                            let
+                                masterRowMemory = record.masterRow |> List.map String.length |> List.sum |> (*) 3
+                                dataRowMemory = record.dataRow |> List.map String.length |> List.sum |> (*) 3
+                                matchedOnMemory = record.matchedOn |> List.map String.length |> List.sum |> (*) 3
+                            in
+                            masterRowMemory + dataRowMemory + matchedOnMemory + 32 -- Record overhead
+                           )
+                        |> List.sum
+                
+                unmatchedMemory = 
+                    (data.unmatchedMaster ++ data.unmatchedData)
+                        |> List.map (List.map String.length >> List.sum >> (*) 3)
+                        |> List.sum
+            in
+            recordsMemory + unmatchedMemory + 1024 -- Structure overhead
+
+
+{-| Estimate memory usage of processed data
+-}
+estimateProcessedDataMemory : Maybe Tools.DataExtractor.Model.ProcessedData -> Int  
+estimateProcessedDataMemory maybeData =
+    -- For now, same estimation as preview data
+    estimatePreviewDataMemory maybeData

@@ -65,6 +65,12 @@ initialModel =
     , previewData = Nothing
     , isGeneratingPreview = False
     , previewError = Nothing
+    -- Memory Management Fields
+    , memoryUsage = 0
+    , memoryWarningThreshold = 83886080 -- 80MB in bytes
+    , memoryLimitThreshold = 104857600 -- 100MB in bytes  
+    , showMemoryWarning = False
+    , lastMemoryCheck = 0.0
     }
 
 

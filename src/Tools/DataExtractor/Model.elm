@@ -2,6 +2,9 @@ module Tools.DataExtractor.Model exposing
     ( Model, Msg(..), ConfigureMsg(..), PreviewMsg(..), Step(..), FileData, ValidationError(..)
     , MatchedRecord, ProcessingStats, ProcessedData, MatchConfig
     , init, stepToString, canProceedToStep, getStepIndex
+    -- Memory Management Functions
+    , estimateFileDataMemory, isMemoryUsageCritical, isMemoryUsageHigh
+    , shouldShowMemoryWarning, clearLargeDataStructures
     )
 
 {-| Data Extractor tool model and types.
@@ -68,6 +71,12 @@ type alias Model =
     , previewData : Maybe ProcessedData
     , isGeneratingPreview : Bool
     , previewError : Maybe String
+    -- Memory Management Fields
+    , memoryUsage : Int -- In bytes
+    , memoryWarningThreshold : Int -- 80MB threshold
+    , memoryLimitThreshold : Int -- 100MB hard limit
+    , showMemoryWarning : Bool
+    , lastMemoryCheck : Float -- Timestamp of last memory check
     }
 
 
@@ -121,6 +130,11 @@ type PreviewMsg
     | PreviewFailed String
     | ReturnToConfigure
     | NextToSelectFields
+    -- Memory Management Messages
+    | CheckMemoryUsage
+    | MemoryUsageUpdated Int
+    | ClearPreviewData
+    | TriggerMemoryCleanup
 
 
 {-| Configure step messages
@@ -177,6 +191,12 @@ init =
     , previewData = Nothing
     , isGeneratingPreview = False
     , previewError = Nothing
+    -- Memory Management Initial Values
+    , memoryUsage = 0
+    , memoryWarningThreshold = 83886080 -- 80MB in bytes
+    , memoryLimitThreshold = 104857600 -- 100MB in bytes  
+    , showMemoryWarning = False
+    , lastMemoryCheck = 0.0
     }
 
 
@@ -243,3 +263,70 @@ getStepIndex step =
 
         Download ->
             5
+
+
+-- MEMORY MANAGEMENT FUNCTIONS
+
+
+{-| Estimate memory usage of FileData in bytes
+-}
+estimateFileDataMemory : FileData -> Int
+estimateFileDataMemory fileData =
+    let
+        -- Estimate string memory (roughly 2 bytes per character + overhead)
+        stringMemory strings =
+            strings
+                |> List.map String.length
+                |> List.sum
+                |> (*) 3 -- Account for UTF-8 and overhead
+        
+        headerMemory = stringMemory fileData.headers
+        rowMemory = fileData.rows |> List.concat |> stringMemory
+        
+        -- Add overhead for data structures (lists, records, etc.)
+        structureOverhead = (List.length fileData.rows + List.length fileData.headers) * 64
+    in
+    headerMemory + rowMemory + structureOverhead + fileData.fileSize
+
+
+{-| Check if memory usage is at critical level (>100MB)
+-}
+isMemoryUsageCritical : Model -> Bool
+isMemoryUsageCritical model =
+    model.memoryUsage >= model.memoryLimitThreshold
+
+
+{-| Check if memory usage is high (>80MB)  
+-}
+isMemoryUsageHigh : Model -> Bool
+isMemoryUsageHigh model =
+    model.memoryUsage >= model.memoryWarningThreshold
+
+
+{-| Determine if memory warning should be shown
+-}
+shouldShowMemoryWarning : Model -> Bool
+shouldShowMemoryWarning model =
+    isMemoryUsageHigh model && not model.showMemoryWarning
+
+
+{-| Clear large data structures from model for memory cleanup
+-}
+clearLargeDataStructures : Model -> Model
+clearLargeDataStructures model =
+    { model 
+        | previewData = Nothing
+        , processedData = Nothing
+        -- Reset memory tracking
+        , memoryUsage = 
+            case (model.masterFile, model.dataFile) of
+                (Just master, Just data) ->
+                    estimateFileDataMemory master + estimateFileDataMemory data
+                (Just master, Nothing) ->
+                    estimateFileDataMemory master
+                (Nothing, Just data) ->
+                    estimateFileDataMemory data
+                (Nothing, Nothing) ->
+                    0
+        , showMemoryWarning = False
+    }

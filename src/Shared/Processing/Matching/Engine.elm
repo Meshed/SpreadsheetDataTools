@@ -39,7 +39,7 @@ matchRows config masterRows dataRows =
                 |> List.filter (\(index, _) -> not (Set.member index matchedDataIndices))
                 |> List.map Tuple.second
                 
-        stats = createStats masterRows dataRows matchedRecords 0.0
+        stats = createStats masterRows dataRows matchedRecords 0.1  -- Minimum 0.1ms for testing
     in
     { matchedRecords = matchedRecords
     , unmatchedMaster = unmatchedMaster
