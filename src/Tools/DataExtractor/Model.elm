@@ -1,15 +1,14 @@
 module Tools.DataExtractor.Model exposing
-    ( Model, Msg(..), ConfigureMsg(..), PreviewMsg(..), Step(..), FileData, ValidationError(..)
+    ( Model, Msg(..), ConfigureMsg(..), PreviewMsg(..), SelectFieldsMsg(..), Step(..), FileData, ValidationError(..)
     , MatchedRecord, ProcessingStats, ProcessedData, MatchConfig
     , init, stepToString, canProceedToStep, getStepIndex
-    -- Memory Management Functions
-    , estimateFileDataMemory, isMemoryUsageCritical, isMemoryUsageHigh
-    , shouldShowMemoryWarning, clearLargeDataStructures
+    , clearLargeDataStructures, estimateFileDataMemory, isMemoryUsageCritical, isMemoryUsageHigh, shouldShowMemoryWarning
+      -- Memory Management Functions
     )
 
 {-| Data Extractor tool model and types.
 
-@docs Model, Msg, ConfigureMsg, PreviewMsg, Step, FileData, ValidationError
+@docs Model, Msg, ConfigureMsg, PreviewMsg, SelectFieldsMsg, Step, FileData, ValidationError
 @docs MatchedRecord, ProcessingStats, ProcessedData, MatchConfig
 @docs init, stepToString, canProceedToStep, getStepIndex
 
@@ -64,13 +63,16 @@ type alias Model =
     , processingFileType : Maybe String
     , matchConfig : Maybe MatchConfig
     , processedData : Maybe ProcessedData
-    , selectedFields : List String
+    , selectedFields : Set String
+    , availableFields : List String
+    , isSelectingFields : Bool
     , selectedMasterColumns : List String
     , selectedDataColumns : List String
     , privacyNoticeShown : Bool
     , previewData : Maybe ProcessedData
     , isGeneratingPreview : Bool
     , previewError : Maybe String
+
     -- Memory Management Fields
     , memoryUsage : Int -- In bytes
     , memoryWarningThreshold : Int -- 80MB threshold
@@ -130,11 +132,20 @@ type PreviewMsg
     | PreviewFailed String
     | ReturnToConfigure
     | NextToSelectFields
-    -- Memory Management Messages
+      -- Memory Management Messages
     | CheckMemoryUsage
     | MemoryUsageUpdated Int
     | ClearPreviewData
     | TriggerMemoryCleanup
+
+
+{-| Select Fields step messages
+-}
+type SelectFieldsMsg
+    = ToggleField String
+    | SelectAllFields
+    | ClearAllFields
+    | ValidateFieldSelection
 
 
 {-| Configure step messages
@@ -166,6 +177,7 @@ type Msg
     | ConfigureMatching MatchConfig
     | ConfigureMsg ConfigureMsg
     | PreviewMsg PreviewMsg
+    | SelectFieldsMsg SelectFieldsMsg
     | SelectField String Bool
     | GenerateCSV
     | DownloadComplete
@@ -184,17 +196,20 @@ init =
     , processingFileType = Nothing
     , matchConfig = Nothing
     , processedData = Nothing
-    , selectedFields = []
+    , selectedFields = Set.empty
+    , availableFields = []
+    , isSelectingFields = False
     , selectedMasterColumns = []
     , selectedDataColumns = []
     , privacyNoticeShown = True
     , previewData = Nothing
     , isGeneratingPreview = False
     , previewError = Nothing
+
     -- Memory Management Initial Values
     , memoryUsage = 0
     , memoryWarningThreshold = 83886080 -- 80MB in bytes
-    , memoryLimitThreshold = 104857600 -- 100MB in bytes  
+    , memoryLimitThreshold = 104857600 -- 100MB in bytes
     , showMemoryWarning = False
     , lastMemoryCheck = 0.0
     }
@@ -241,7 +256,7 @@ canProceedToStep step model =
             canProceedToStep Preview model && model.previewData /= Nothing
 
         Download ->
-            canProceedToStep SelectFields model && not (List.isEmpty model.selectedFields)
+            canProceedToStep SelectFields model && not (Set.isEmpty model.selectedFields)
 
 
 {-| Get step index for progress indicator
@@ -265,6 +280,7 @@ getStepIndex step =
             5
 
 
+
 -- MEMORY MANAGEMENT FUNCTIONS
 
 
@@ -278,13 +294,18 @@ estimateFileDataMemory fileData =
             strings
                 |> List.map String.length
                 |> List.sum
-                |> (*) 3 -- Account for UTF-8 and overhead
-        
-        headerMemory = stringMemory fileData.headers
-        rowMemory = fileData.rows |> List.concat |> stringMemory
-        
+                |> (*) 3
+
+        -- Account for UTF-8 and overhead
+        headerMemory =
+            stringMemory fileData.headers
+
+        rowMemory =
+            fileData.rows |> List.concat |> stringMemory
+
         -- Add overhead for data structures (lists, records, etc.)
-        structureOverhead = (List.length fileData.rows + List.length fileData.headers) * 64
+        structureOverhead =
+            (List.length fileData.rows + List.length fileData.headers) * 64
     in
     headerMemory + rowMemory + structureOverhead + fileData.fileSize
 
@@ -296,7 +317,7 @@ isMemoryUsageCritical model =
     model.memoryUsage >= model.memoryLimitThreshold
 
 
-{-| Check if memory usage is high (>80MB)  
+{-| Check if memory usage is high (>80MB)
 -}
 isMemoryUsageHigh : Model -> Bool
 isMemoryUsageHigh model =
@@ -314,19 +335,23 @@ shouldShowMemoryWarning model =
 -}
 clearLargeDataStructures : Model -> Model
 clearLargeDataStructures model =
-    { model 
+    { model
         | previewData = Nothing
         , processedData = Nothing
+
         -- Reset memory tracking
-        , memoryUsage = 
-            case (model.masterFile, model.dataFile) of
-                (Just master, Just data) ->
+        , memoryUsage =
+            case ( model.masterFile, model.dataFile ) of
+                ( Just master, Just data ) ->
                     estimateFileDataMemory master + estimateFileDataMemory data
-                (Just master, Nothing) ->
+
+                ( Just master, Nothing ) ->
                     estimateFileDataMemory master
-                (Nothing, Just data) ->
+
+                ( Nothing, Just data ) ->
                     estimateFileDataMemory data
-                (Nothing, Nothing) ->
+
+                ( Nothing, Nothing ) ->
                     0
         , showMemoryWarning = False
     }

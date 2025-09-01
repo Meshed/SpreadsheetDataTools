@@ -9,8 +9,10 @@ module Tools.DataExtractor.Update exposing (update)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
-import Tools.DataExtractor.Model exposing (ConfigureMsg(..), PreviewMsg(..), FileData, Model, Msg(..), Step(..), ValidationError(..))
+import Set
+import Tools.DataExtractor.Model exposing (ConfigureMsg(..), FileData, Model, Msg(..), PreviewMsg(..), SelectFieldsMsg(..), Step(..), ValidationError(..))
 import Tools.DataExtractor.Steps.Preview as Preview
+import Tools.DataExtractor.Steps.SelectFields as SelectFields
 import Types.Errors exposing (AppError(..))
 
 
@@ -85,30 +87,57 @@ update msg model =
             in
             if Tools.DataExtractor.Model.canProceedToStep nextStep model then
                 let
-                    updatedModel = 
+                    updatedModel =
                         if nextStep == Preview then
                             -- Create MatchConfig when transitioning to Preview step
                             let
-                                masterIndices = columnNamesToIndices model.selectedMasterColumns model.masterFile
-                                dataIndices = columnNamesToIndices model.selectedDataColumns model.dataFile
-                                
-                                matchConfig = 
+                                masterIndices =
+                                    columnNamesToIndices model.selectedMasterColumns model.masterFile
+
+                                dataIndices =
+                                    columnNamesToIndices model.selectedDataColumns model.dataFile
+
+                                matchConfig =
                                     { masterColumns = masterIndices
                                     , dataColumns = dataIndices
                                     , useFuzzyMatch = model.matchConfig |> Maybe.map .useFuzzyMatch |> Maybe.withDefault False
                                     }
                             in
-                            { model 
+                            { model
                                 | currentStep = nextStep
                                 , matchConfig = Just matchConfig
                             }
+
+                        else if nextStep == SelectFields then
+                            -- Initialize field selection when entering SelectFields step
+                            let
+                                availableFields =
+                                    SelectFields.extractAvailableFields model.previewData model.masterFile model.dataFile
+
+                                defaultSelection =
+                                    SelectFields.initializeSelectedFields model.dataFile
+
+                                selectedFields =
+                                    if Set.isEmpty model.selectedFields then
+                                        defaultSelection
+
+                                    else
+                                        model.selectedFields
+                            in
+                            { model
+                                | currentStep = nextStep
+                                , availableFields = availableFields
+                                , selectedFields = selectedFields
+                            }
+
                         else
                             { model | currentStep = nextStep }
-                    
+
                     -- Automatically generate preview when entering Preview step
-                    cmd = 
+                    cmd =
                         if nextStep == Preview && model.previewData == Nothing then
                             Cmd.map PreviewMsg (Preview.generatePreview updatedModel)
+
                         else
                             Cmd.none
                 in
@@ -141,14 +170,17 @@ update msg model =
         PreviewMsg previewMsg ->
             updatePreviewStep previewMsg model
 
+        SelectFieldsMsg selectFieldsMsg ->
+            updateSelectFieldsStep selectFieldsMsg model
+
         SelectField fieldName selected ->
             let
                 updatedFields =
                     if selected then
-                        fieldName :: model.selectedFields
+                        Set.insert fieldName model.selectedFields
 
                     else
-                        List.filter ((/=) fieldName) model.selectedFields
+                        Set.remove fieldName model.selectedFields
             in
             ( { model | selectedFields = updatedFields }, Cmd.none )
 
@@ -491,7 +523,7 @@ updatePreviewStep previewMsg model =
             )
 
         PreviewGenerated processedData ->
-            ( { model 
+            ( { model
                 | previewData = Just processedData
                 , isGeneratingPreview = False
                 , previewError = Nothing
@@ -500,7 +532,7 @@ updatePreviewStep previewMsg model =
             )
 
         PreviewFailed error ->
-            ( { model 
+            ( { model
                 | previewError = Just error
                 , isGeneratingPreview = False
               }
@@ -508,7 +540,7 @@ updatePreviewStep previewMsg model =
             )
 
         ReturnToConfigure ->
-            ( { model 
+            ( { model
                 | currentStep = Configure
                 , previewData = Nothing
                 , previewError = Nothing
@@ -524,9 +556,11 @@ updatePreviewStep previewMsg model =
         -- Memory Management Messages
         CheckMemoryUsage ->
             let
-                currentMemory = calculateCurrentMemoryUsage model
-                updatedModel = 
-                    { model 
+                currentMemory =
+                    calculateCurrentMemoryUsage model
+
+                updatedModel =
+                    { model
                         | memoryUsage = currentMemory
                         , showMemoryWarning = Tools.DataExtractor.Model.shouldShowMemoryWarning { model | memoryUsage = currentMemory }
                         , lastMemoryCheck = 0.0 -- Would be Time.now in real implementation
@@ -535,7 +569,7 @@ updatePreviewStep previewMsg model =
             ( updatedModel, Cmd.none )
 
         MemoryUsageUpdated newUsage ->
-            ( { model 
+            ( { model
                 | memoryUsage = newUsage
                 , showMemoryWarning = newUsage >= model.memoryWarningThreshold
               }
@@ -543,7 +577,7 @@ updatePreviewStep previewMsg model =
             )
 
         ClearPreviewData ->
-            ( { model 
+            ( { model
                 | previewData = Nothing
                 , memoryUsage = max 0 (model.memoryUsage - estimatePreviewDataMemory model.previewData)
               }
@@ -552,7 +586,8 @@ updatePreviewStep previewMsg model =
 
         TriggerMemoryCleanup ->
             let
-                cleanedModel = Tools.DataExtractor.Model.clearLargeDataStructures model
+                cleanedModel =
+                    Tools.DataExtractor.Model.clearLargeDataStructures model
             in
             ( cleanedModel, Cmd.none )
 
@@ -564,16 +599,18 @@ columnNamesToIndices columnNames maybeFileData =
     case maybeFileData of
         Nothing ->
             []
-            
+
         Just fileData ->
             columnNames
-                |> List.filterMap (\columnName ->
-                    fileData.headers
-                        |> List.indexedMap Tuple.pair
-                        |> List.filter (\(_, header) -> header == columnName)
-                        |> List.head
-                        |> Maybe.map Tuple.first
-                   )
+                |> List.filterMap
+                    (\columnName ->
+                        fileData.headers
+                            |> List.indexedMap Tuple.pair
+                            |> List.filter (\( _, header ) -> header == columnName)
+                            |> List.head
+                            |> Maybe.map Tuple.first
+                    )
+
 
 
 -- MEMORY MANAGEMENT HELPER FUNCTIONS
@@ -584,18 +621,27 @@ columnNamesToIndices columnNames maybeFileData =
 calculateCurrentMemoryUsage : Model -> Int
 calculateCurrentMemoryUsage model =
     let
-        masterFileMemory = 
+        masterFileMemory =
             case model.masterFile of
-                Just file -> Tools.DataExtractor.Model.estimateFileDataMemory file
-                Nothing -> 0
-        
-        dataFileMemory = 
+                Just file ->
+                    Tools.DataExtractor.Model.estimateFileDataMemory file
+
+                Nothing ->
+                    0
+
+        dataFileMemory =
             case model.dataFile of
-                Just file -> Tools.DataExtractor.Model.estimateFileDataMemory file
-                Nothing -> 0
-        
-        previewDataMemory = estimatePreviewDataMemory model.previewData
-        processedDataMemory = estimateProcessedDataMemory model.processedData
+                Just file ->
+                    Tools.DataExtractor.Model.estimateFileDataMemory file
+
+                Nothing ->
+                    0
+
+        previewDataMemory =
+            estimatePreviewDataMemory model.previewData
+
+        processedDataMemory =
+            estimateProcessedDataMemory model.processedData
     in
     masterFileMemory + dataFileMemory + previewDataMemory + processedDataMemory
 
@@ -605,32 +651,77 @@ calculateCurrentMemoryUsage model =
 estimatePreviewDataMemory : Maybe Tools.DataExtractor.Model.ProcessedData -> Int
 estimatePreviewDataMemory maybeData =
     case maybeData of
-        Nothing -> 0
+        Nothing ->
+            0
+
         Just data ->
             let
-                recordsMemory = 
+                recordsMemory =
                     data.matchedRecords
-                        |> List.map (\record -> 
-                            let
-                                masterRowMemory = record.masterRow |> List.map String.length |> List.sum |> (*) 3
-                                dataRowMemory = record.dataRow |> List.map String.length |> List.sum |> (*) 3
-                                matchedOnMemory = record.matchedOn |> List.map String.length |> List.sum |> (*) 3
-                            in
-                            masterRowMemory + dataRowMemory + matchedOnMemory + 32 -- Record overhead
-                           )
+                        |> List.map
+                            (\record ->
+                                let
+                                    masterRowMemory =
+                                        record.masterRow |> List.map String.length |> List.sum |> (*) 3
+
+                                    dataRowMemory =
+                                        record.dataRow |> List.map String.length |> List.sum |> (*) 3
+
+                                    matchedOnMemory =
+                                        record.matchedOn |> List.map String.length |> List.sum |> (*) 3
+                                in
+                                masterRowMemory + dataRowMemory + matchedOnMemory + 32
+                             -- Record overhead
+                            )
                         |> List.sum
-                
-                unmatchedMemory = 
+
+                unmatchedMemory =
                     (data.unmatchedMaster ++ data.unmatchedData)
                         |> List.map (List.map String.length >> List.sum >> (*) 3)
                         |> List.sum
             in
-            recordsMemory + unmatchedMemory + 1024 -- Structure overhead
+            recordsMemory + unmatchedMemory + 1024
+
+
+
+-- Structure overhead
 
 
 {-| Estimate memory usage of processed data
 -}
-estimateProcessedDataMemory : Maybe Tools.DataExtractor.Model.ProcessedData -> Int  
+estimateProcessedDataMemory : Maybe Tools.DataExtractor.Model.ProcessedData -> Int
 estimateProcessedDataMemory maybeData =
     -- For now, same estimation as preview data
     estimatePreviewDataMemory maybeData
+
+
+{-| Update select fields step state
+-}
+updateSelectFieldsStep : SelectFieldsMsg -> Model -> ( Model, Cmd Msg )
+updateSelectFieldsStep selectFieldsMsg model =
+    case selectFieldsMsg of
+        ToggleField fieldName ->
+            let
+                updatedFields =
+                    if Set.member fieldName model.selectedFields then
+                        Set.remove fieldName model.selectedFields
+
+                    else
+                        Set.insert fieldName model.selectedFields
+            in
+            ( { model | selectedFields = updatedFields }, Cmd.none )
+
+        SelectAllFields ->
+            let
+                allFieldsSet =
+                    Set.fromList model.availableFields
+            in
+            ( { model | selectedFields = allFieldsSet }, Cmd.none )
+
+        ClearAllFields ->
+            ( { model | selectedFields = Set.empty }, Cmd.none )
+
+        ValidateFieldSelection ->
+            -- Validation happens automatically in the view
+            -- This message is just for future extensibility
+            ( model, Cmd.none )

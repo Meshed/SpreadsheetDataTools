@@ -1722,14 +1722,14 @@
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
   .field--matched {
-    background-color: #000;
-    color: #fff;
-    border-color: #fff;
+    background-color: var(--color-text);
+    color: var(--color-background);
+    border-color: var(--color-background);
   }
   
   .match-confidence--exact {
-    background-color: #000;
-    color: #fff;
+    background-color: var(--color-text);
+    color: var(--color-background);
   }
 }
 
@@ -1764,6 +1764,349 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+/* Select Fields Step Styles */
+.select-fields-step {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+/* Field Selection Loading State */
+.select-fields-loading {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-text-secondary);
+}
+
+/* Field Selection Error State */
+.select-fields-error {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background-color: var(--color-error-light);
+  border: 2px solid var(--color-error);
+  border-radius: 8px;
+  margin: var(--spacing-lg) 0;
+}
+
+.select-fields-error h3 {
+  color: var(--color-error-dark);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.select-fields-error p {
+  color: var(--color-error-dark);
+  margin: 0;
+}
+
+/* Field Selection Container */
+.field-selection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  margin: var(--spacing-lg) 0;
+}
+
+/* Bulk Actions Section */
+.bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.selection-count {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.bulk-buttons {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.bulk-buttons .btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.9rem;
+  min-width: 100px;
+}
+
+/* Field Selection List */
+.field-selection-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* Individual Field Option */
+.field-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--color-background);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.field-option:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.field-option:has(input:checked) {
+  background-color: var(--color-success-light);
+  border-color: var(--color-success);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+/* Field Option Checkbox */
+.field-option__checkbox {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.field-option__checkbox input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* Field Option Content */
+.field-option__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* Field Option Label */
+.field-option__label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  margin: 0;
+}
+
+.field-option__source {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background-color: var(--color-background-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-light);
+}
+
+/* Field Preview */
+.field-preview {
+  margin-top: var(--spacing-xs);
+}
+
+.field-preview__values {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.field-preview__empty {
+  font-size: 0.85rem;
+  color: var(--color-text-disabled);
+  font-style: italic;
+}
+
+/* Field Validation */
+.field-validation {
+  padding: var(--spacing-md);
+  margin: var(--spacing-lg) 0;
+}
+
+.field-validation__error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--color-error-light);
+  border: 2px solid var(--color-error);
+  border-radius: 8px;
+  color: var(--color-error-dark);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.validation-icon {
+  font-size: 1.2rem;
+  color: var(--color-error);
+}
+
+/* Selection Summary */
+.selection-summary {
+  text-align: center;
+  padding: var(--spacing-md);
+  background-color: var(--color-info-light);
+  border: 1px solid var(--color-info);
+  border-radius: 8px;
+  margin-top: var(--spacing-md);
+}
+
+.selection-summary p {
+  color: var(--color-info-dark);
+  margin: 0;
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
+/* Select Fields Actions */
+.select-fields-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.select-fields-actions .btn {
+  min-width: 160px;
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+/* Enhanced States for Field Options */
+.field-option--selected {
+  background: linear-gradient(135deg, var(--color-success-light) 0%, rgba(16, 185, 129, 0.15) 100%);
+  border-color: var(--color-success);
+  border-width: 2px;
+}
+
+.field-option--selected .field-option__label {
+  color: var(--color-success-dark);
+  font-weight: 700;
+}
+
+.field-option--selected .field-option__source {
+  background-color: var(--color-success);
+  color: white;
+  border-color: var(--color-success-dark);
+}
+
+/* Focus states for accessibility */
+.field-option__checkbox input[type="checkbox"]:focus {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.field-option:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Field Source Type Styling */
+.field-option__source--master {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-color: var(--color-primary);
+}
+
+.field-option__source--data {
+  background-color: var(--color-secondary-light);
+  color: var(--color-secondary-dark);
+  border-color: var(--color-secondary);
+}
+
+.field-option__source--both {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-dark);
+  border-color: var(--color-warning);
+}
+
+/* Bulk Actions Enhanced States */
+.bulk-buttons .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bulk-buttons .btn--outline {
+  background-color: transparent;
+  border: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.bulk-buttons .btn--outline:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.bulk-buttons .btn--small {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.9rem;
+  min-width: 90px;
+}
+
+/* Responsive Design for Select Fields Step */
+@media (max-width: 768px) {
+  .select-fields-step {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+  
+  .field-selection-list {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .bulk-actions {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    text-align: center;
+  }
+  
+  .bulk-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .select-fields-actions {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  .select-fields-actions .btn {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .field-option {
+    padding: var(--spacing-md) var(--spacing-sm);
+  }
+  
+  .field-option__label {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+  
+  .field-option__source {
+    align-self: flex-start;
+  }
 }
 
 /* Responsive Design for Preview Step */

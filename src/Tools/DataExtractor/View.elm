@@ -12,6 +12,7 @@ import Ports
 import Tools.DataExtractor.Model as ExtractorModel exposing (Model, Msg(..), Step(..))
 import Tools.DataExtractor.Steps.Configure as Configure
 import Tools.DataExtractor.Steps.Preview as Preview
+import Tools.DataExtractor.Steps.SelectFields as SelectFields
 import Tools.DataExtractor.Steps.Upload as Upload
 import Tools.DataExtractor.Update as ExtractorUpdate
 
@@ -128,7 +129,7 @@ viewCurrentStep model =
             Html.map PreviewMsg (Preview.view model)
 
         SelectFields ->
-            viewPlaceholderStep "Select Output Fields" "Choose which fields to include in the output CSV file."
+            Html.map SelectFieldsMsg (SelectFields.view model)
 
         Download ->
             viewPlaceholderStep "Download Results" "Download your processed data as a CSV file."
