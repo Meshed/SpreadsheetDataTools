@@ -62,6 +62,9 @@ initialModel =
     , selectedMasterColumns = []
     , selectedDataColumns = []
     , privacyNoticeShown = True
+    , previewData = Nothing
+    , isGeneratingPreview = False
+    , previewError = Nothing
     }
 
 

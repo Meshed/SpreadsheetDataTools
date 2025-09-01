@@ -11,6 +11,7 @@ import Html.Attributes exposing (attribute, class)
 import Ports
 import Tools.DataExtractor.Model as ExtractorModel exposing (Model, Msg(..), Step(..))
 import Tools.DataExtractor.Steps.Configure as Configure
+import Tools.DataExtractor.Steps.Preview as Preview
 import Tools.DataExtractor.Steps.Upload as Upload
 import Tools.DataExtractor.Update as ExtractorUpdate
 
@@ -124,7 +125,7 @@ viewCurrentStep model =
             Configure.view model
 
         Preview ->
-            viewPlaceholderStep "Preview Results" "Preview the matched records before selecting output fields."
+            Html.map PreviewMsg (Preview.view model)
 
         SelectFields ->
             viewPlaceholderStep "Select Output Fields" "Choose which fields to include in the output CSV file."

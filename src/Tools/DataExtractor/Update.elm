@@ -9,7 +9,8 @@ module Tools.DataExtractor.Update exposing (update)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
-import Tools.DataExtractor.Model exposing (ConfigureMsg(..), FileData, Model, Msg(..), Step(..), ValidationError(..))
+import Tools.DataExtractor.Model exposing (ConfigureMsg(..), PreviewMsg(..), FileData, Model, Msg(..), Step(..), ValidationError(..))
+import Tools.DataExtractor.Steps.Preview as Preview
 import Types.Errors exposing (AppError(..))
 
 
@@ -83,7 +84,35 @@ update msg model =
                     getNextStep model.currentStep
             in
             if Tools.DataExtractor.Model.canProceedToStep nextStep model then
-                ( { model | currentStep = nextStep }, Cmd.none )
+                let
+                    updatedModel = 
+                        if nextStep == Preview then
+                            -- Create MatchConfig when transitioning to Preview step
+                            let
+                                masterIndices = columnNamesToIndices model.selectedMasterColumns model.masterFile
+                                dataIndices = columnNamesToIndices model.selectedDataColumns model.dataFile
+                                
+                                matchConfig = 
+                                    { masterColumns = masterIndices
+                                    , dataColumns = dataIndices
+                                    , useFuzzyMatch = model.matchConfig |> Maybe.map .useFuzzyMatch |> Maybe.withDefault False
+                                    }
+                            in
+                            { model 
+                                | currentStep = nextStep
+                                , matchConfig = Just matchConfig
+                            }
+                        else
+                            { model | currentStep = nextStep }
+                    
+                    -- Automatically generate preview when entering Preview step
+                    cmd = 
+                        if nextStep == Preview && model.previewData == Nothing then
+                            Cmd.map PreviewMsg (Preview.generatePreview updatedModel)
+                        else
+                            Cmd.none
+                in
+                ( updatedModel, cmd )
 
             else
                 ( model, Cmd.none )
@@ -108,6 +137,9 @@ update msg model =
 
         ConfigureMsg configureMsg ->
             updateConfigureStep configureMsg model
+
+        PreviewMsg previewMsg ->
+            updatePreviewStep previewMsg model
 
         SelectField fieldName selected ->
             let
@@ -446,3 +478,64 @@ reorderList fromIndex toIndex list =
                         List.drop validToIndex listWithoutItem
                 in
                 beforeTarget ++ [ item ] ++ afterTarget
+
+
+{-| Update preview step state
+-}
+updatePreviewStep : PreviewMsg -> Model -> ( Model, Cmd Msg )
+updatePreviewStep previewMsg model =
+    case previewMsg of
+        GeneratePreview ->
+            ( { model | isGeneratingPreview = True, previewError = Nothing }
+            , Cmd.map PreviewMsg (Preview.generatePreview model)
+            )
+
+        PreviewGenerated processedData ->
+            ( { model 
+                | previewData = Just processedData
+                , isGeneratingPreview = False
+                , previewError = Nothing
+              }
+            , Cmd.none
+            )
+
+        PreviewFailed error ->
+            ( { model 
+                | previewError = Just error
+                , isGeneratingPreview = False
+              }
+            , Cmd.none
+            )
+
+        ReturnToConfigure ->
+            ( { model 
+                | currentStep = Configure
+                , previewData = Nothing
+                , previewError = Nothing
+              }
+            , Cmd.none
+            )
+
+        NextToSelectFields ->
+            ( { model | currentStep = SelectFields }
+            , Cmd.none
+            )
+
+
+{-| Convert column names to column indices using file headers
+-}
+columnNamesToIndices : List String -> Maybe FileData -> List Int
+columnNamesToIndices columnNames maybeFileData =
+    case maybeFileData of
+        Nothing ->
+            []
+            
+        Just fileData ->
+            columnNames
+                |> List.filterMap (\columnName ->
+                    fileData.headers
+                        |> List.indexedMap Tuple.pair
+                        |> List.filter (\(_, header) -> header == columnName)
+                        |> List.head
+                        |> Maybe.map Tuple.first
+                   )

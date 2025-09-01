@@ -1,17 +1,20 @@
 module Tools.DataExtractor.Model exposing
-    ( Model, Msg(..), ConfigureMsg(..), Step(..), FileData, ValidationError(..)
+    ( Model, Msg(..), ConfigureMsg(..), PreviewMsg(..), Step(..), FileData, ValidationError(..)
+    , MatchedRecord, ProcessingStats, ProcessedData, MatchConfig
     , init, stepToString, canProceedToStep, getStepIndex
     )
 
 {-| Data Extractor tool model and types.
 
-@docs Model, Msg, ConfigureMsg, Step, FileData, ValidationError
+@docs Model, Msg, ConfigureMsg, PreviewMsg, Step, FileData, ValidationError
+@docs MatchedRecord, ProcessingStats, ProcessedData, MatchConfig
 @docs init, stepToString, canProceedToStep, getStepIndex
 
 -}
 
 import Dict exposing (Dict)
 import Json.Encode as Encode
+import Set exposing (Set)
 import Types.Errors exposing (AppError)
 
 
@@ -62,6 +65,9 @@ type alias Model =
     , selectedMasterColumns : List String
     , selectedDataColumns : List String
     , privacyNoticeShown : Bool
+    , previewData : Maybe ProcessedData
+    , isGeneratingPreview : Bool
+    , previewError : Maybe String
     }
 
 
@@ -74,13 +80,47 @@ type alias MatchConfig =
     }
 
 
+{-| Individual matched record with metadata
+-}
+type alias MatchedRecord =
+    { masterRow : List String
+    , dataRow : List String
+    , matchScore : Float
+    , matchedOn : List String
+    }
+
+
+{-| Processing statistics
+-}
+type alias ProcessingStats =
+    { totalMasterRows : Int
+    , totalDataRows : Int
+    , matchedCount : Int
+    , unmatchedMasterCount : Int
+    , unmatchedDataCount : Int
+    , processingTime : Float
+    }
+
+
 {-| Processed data after matching
 -}
 type alias ProcessedData =
-    { matchedRecords : List (List String)
-    , matchCount : Int
-    , totalRecords : Int
+    { matchedRecords : List MatchedRecord
+    , unmatchedMaster : List (List String)
+    , unmatchedData : List (List String)
+    , statistics : ProcessingStats
+    , selectedFields : Set String
     }
+
+
+{-| Preview step messages
+-}
+type PreviewMsg
+    = GeneratePreview
+    | PreviewGenerated ProcessedData
+    | PreviewFailed String
+    | ReturnToConfigure
+    | NextToSelectFields
 
 
 {-| Configure step messages
@@ -111,6 +151,7 @@ type Msg
     | ProcessFiles
     | ConfigureMatching MatchConfig
     | ConfigureMsg ConfigureMsg
+    | PreviewMsg PreviewMsg
     | SelectField String Bool
     | GenerateCSV
     | DownloadComplete
@@ -133,6 +174,9 @@ init =
     , selectedMasterColumns = []
     , selectedDataColumns = []
     , privacyNoticeShown = True
+    , previewData = Nothing
+    , isGeneratingPreview = False
+    , previewError = Nothing
     }
 
 
@@ -174,7 +218,7 @@ canProceedToStep step model =
                 && not (List.isEmpty model.selectedDataColumns)
 
         SelectFields ->
-            canProceedToStep Preview model && model.processedData /= Nothing
+            canProceedToStep Preview model && model.previewData /= Nothing
 
         Download ->
             canProceedToStep SelectFields model && not (List.isEmpty model.selectedFields)
