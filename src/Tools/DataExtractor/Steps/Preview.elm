@@ -139,44 +139,72 @@ viewPreviewSamples processedData =
         ]
 
 
-{-| Display individual matched record with field highlighting
+{-| Display individual matched record with field highlighting in horizontal data grid
 -}
 viewMatchedRecord : Int -> MatchedRecord -> Html msg
 viewMatchedRecord index record =
     div [ class "preview-sample" ]
         [ h4 [ class "sample-title" ]
             [ text ("Match " ++ String.fromInt (index + 1)) ]
-        , div [ class "matched-record" ]
-            [ div [ class "master-record" ]
-                [ h5 [] [ text "Master Record" ]
-                , viewRecordFields record.masterRow record.matchedOn
-                ]
-            , div [ class "match-arrow" ] [ text "↔" ]
-            , div [ class "data-record" ]
-                [ h5 [] [ text "Data Record" ]
-                , viewRecordFields record.dataRow record.matchedOn
-                ]
-            ]
+        , div [ class "matched-record-grid" ]
+            [ viewRecordFieldsGrid record.masterRow record.dataRow record.matchedOn ]
         , viewMatchConfidence record.matchScore
         ]
 
 
-{-| Display record fields with highlighting for matched fields
+{-| Display record fields as horizontal data grid with headers and side-by-side comparison
 -}
-viewRecordFields : List String -> List String -> Html msg
-viewRecordFields values matchedFields =
+viewRecordFieldsGrid : List String -> List String -> List String -> Html msg
+viewRecordFieldsGrid masterValues dataValues matchedFields =
     let
-        fieldPairs =
-            List.indexedMap (\index value -> ( index, value )) values
+        maxLength = max (List.length masterValues) (List.length dataValues)
+        
+        -- Pad shorter list with empty strings
+        masterPadded = masterValues ++ List.repeat (maxLength - List.length masterValues) ""
+        dataPadded = dataValues ++ List.repeat (maxLength - List.length dataValues) ""
+        
+        -- Create column headers (Field 1, Field 2, etc.)
+        columnHeaders = List.indexedMap (\i _ -> "Field " ++ String.fromInt (i + 1)) (List.range 0 (maxLength - 1))
     in
-    div [ class "record-fields" ]
-        (List.map (viewField matchedFields) fieldPairs)
+    div [ class "record-fields-grid" ]
+        [ div [ class "grid-table" ]
+            [ div [ class "grid-header" ]
+                [ div [ class "grid-row-label" ] [ text "Column" ]
+                , div [ class "grid-header-cells" ]
+                    (List.map viewColumnHeader columnHeaders)
+                ]
+            , div [ class "grid-body" ]
+                [ viewDataGridRow "Master Record" masterPadded matchedFields
+                , viewDataGridRow "Data Record" dataPadded matchedFields
+                ]
+            ]
+        ]
 
 
-{-| Display individual field with highlighting if matched
+{-| Display column header for data grid
 -}
-viewField : List String -> ( Int, String ) -> Html msg
-viewField matchedFields ( index, value ) =
+viewColumnHeader : String -> Html msg
+viewColumnHeader headerText =
+    div [ class "grid-header-cell" ]
+        [ text headerText ]
+
+
+{-| Display a data row in the grid (Master or Data record)
+-}
+viewDataGridRow : String -> List String -> List String -> Html msg
+viewDataGridRow rowLabel values matchedFields =
+    div [ class "grid-row" ]
+        [ div [ class "grid-row-label" ]
+            [ text rowLabel ]
+        , div [ class "grid-row-cells" ]
+            (List.indexedMap (viewDataGridCell matchedFields) values)
+        ]
+
+
+{-| Display individual cell in data grid with highlighting if matched
+-}
+viewDataGridCell : List String -> Int -> String -> Html msg
+viewDataGridCell matchedFields index value =
     let
         fieldIndex =
             String.fromInt index
@@ -184,15 +212,14 @@ viewField matchedFields ( index, value ) =
         isMatched =
             List.member fieldIndex matchedFields
 
-        fieldClass =
+        cellClass =
             if isMatched then
-                "field field--matched"
-
+                "grid-cell grid-cell--matched"
             else
-                "field"
+                "grid-cell"
     in
-    div [ class fieldClass ]
-        [ span [ class "field-value" ] [ text value ] ]
+    div [ class cellClass ]
+        [ span [ class "grid-cell-value" ] [ text value ] ]
 
 
 {-| Display match confidence score
