@@ -74,7 +74,7 @@ suite =
                     Expect.equal sampleDataFile.headers availableFields
             ]
         , describe "Default Field Selection"
-            [ test "selects all data file headers by default" <|
+            [ test "starts with empty selection by default" <|
                 \_ ->
                     let
                         dataFile =
@@ -84,7 +84,7 @@ suite =
                             SelectFields.initializeSelectedFields dataFile
 
                         expectedFields =
-                            Set.fromList sampleDataFile.headers
+                            Set.empty
                     in
                     Expect.equal expectedFields defaultSelection
             , test "returns empty set when no data file" <|
@@ -164,7 +164,7 @@ suite =
                 \_ ->
                     let
                         model =
-                            { initWithFields | selectedFields = Set.fromList [ "TestField" ] }
+                            { initWithFields | selectedFields = Set.fromList [ "TestField" ], selectedFieldsOrder = [ "TestField" ] }
 
                         ( updatedModel, _ ) =
                             Update.update (SelectFieldsMsg (ToggleField "TestField")) model
@@ -187,7 +187,7 @@ suite =
                 \_ ->
                     let
                         model =
-                            { initWithFields | selectedFields = Set.fromList [ "Field1", "Field2" ] }
+                            { initWithFields | selectedFields = Set.fromList [ "Field1", "Field2" ], selectedFieldsOrder = [ "Field1", "Field2" ] }
 
                         ( updatedModel, _ ) =
                             Update.update (SelectFieldsMsg ClearAllFields) model
@@ -301,6 +301,7 @@ suite =
                                 , dataFile = Just sampleDataFile
                                 , previewData = Just sampleProcessedData
                                 , selectedFields = Set.fromList [ "Field1" ]
+                                , selectedFieldsOrder = [ "Field1" ]
                                 , selectedMasterColumns = [ "Name", "ID" ] -- Required for Preview step validation
                                 , selectedDataColumns = [ "Full Name", "Employee ID" ] -- Required for Preview step validation
                             }
@@ -318,6 +319,7 @@ suite =
                                 , dataFile = Just sampleDataFile
                                 , previewData = Just sampleProcessedData
                                 , selectedFields = Set.empty
+                                , selectedFieldsOrder = []
                             }
 
                         canProceed =
@@ -354,6 +356,7 @@ suite =
                                 , dataFile = Just sampleDataFile
                                 , previewData = Just sampleProcessedData
                                 , selectedFields = Set.empty -- Initially empty
+                                , selectedFieldsOrder = []
                                 , selectedMasterColumns = [ "Name", "ID" ] -- Required for NextStep to work
                                 , selectedDataColumns = [ "Full Name", "Employee ID" ] -- Required for NextStep to work
                             }
@@ -362,7 +365,7 @@ suite =
                             Update.update NextStep model
 
                         expectedDefaults =
-                            Set.fromList sampleDataFile.headers
+                            Set.empty -- Now starts with empty selection
                     in
                     Expect.equal expectedDefaults updatedModel.selectedFields
             , test "preserves existing field selection when re-entering SelectFields" <|
@@ -378,6 +381,7 @@ suite =
                                 , dataFile = Just sampleDataFile
                                 , previewData = Just sampleProcessedData
                                 , selectedFields = existingSelection
+                                , selectedFieldsOrder = [ "CustomField1", "CustomField2" ]
                                 , selectedMasterColumns = [ "Name", "ID" ] -- Required for NextStep to work
                                 , selectedDataColumns = [ "Full Name", "Employee ID" ] -- Required for NextStep to work
                             }
@@ -491,6 +495,7 @@ initWithFields =
         , previewData = Just sampleProcessedData
         , availableFields = sampleMasterFile.headers ++ sampleDataFile.headers
         , selectedFields = Set.empty
+        , selectedFieldsOrder = []
     }
 
 

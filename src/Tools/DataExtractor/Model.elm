@@ -64,6 +64,7 @@ type alias Model =
     , matchConfig : Maybe MatchConfig
     , processedData : Maybe ProcessedData
     , selectedFields : Set String
+    , selectedFieldsOrder : List String  -- Ordered list for CSV column order
     , availableFields : List String
     , isSelectingFields : Bool
     , selectedMasterColumns : List String
@@ -145,6 +146,9 @@ type SelectFieldsMsg
     = ToggleField String
     | SelectAllFields
     | ClearAllFields
+    | MoveFieldUp String
+    | MoveFieldDown String
+    | ReorderFields (List String)
     | ValidateFieldSelection
 
 
@@ -197,6 +201,7 @@ init =
     , matchConfig = Nothing
     , processedData = Nothing
     , selectedFields = Set.empty
+    , selectedFieldsOrder = []
     , availableFields = []
     , isSelectingFields = False
     , selectedMasterColumns = []

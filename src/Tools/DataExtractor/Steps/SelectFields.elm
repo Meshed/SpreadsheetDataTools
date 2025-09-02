@@ -12,6 +12,7 @@ sample data preview, and bulk selection controls.
 
 -}
 
+import Dict exposing (Dict)
 import Html exposing (Html, button, div, h2, h3, h4, input, label, p, span, text)
 import Html.Attributes exposing (checked, class, disabled, for, id, type_)
 import Html.Events exposing (onCheck, onClick)
@@ -79,7 +80,7 @@ viewErrorState error =
         ]
 
 
-{-| Main field selection interface
+{-| Main field selection interface with two-panel layout
 -}
 viewFieldSelection : Model -> FileData -> FileData -> ProcessedData -> Html Msg
 viewFieldSelection model masterFile dataFile previewData =
@@ -96,9 +97,15 @@ viewFieldSelection model masterFile dataFile previewData =
     in
     div [ class "field-selection" ]
         [ viewBulkActions fieldCount (List.length model.availableFields)
-        , viewFieldList model masterFile dataFile previewData
+        , div [ class "field-selection-panels" ]
+            [ div [ class "field-selection-panel" ]
+                [ viewSelectedFieldsList model
+                , viewAvailableFieldsList model masterFile dataFile previewData
+                ]
+            , div [ class "csv-preview-panel" ]
+                [ viewCSVPreview model masterFile dataFile previewData ]
+            ]
         , viewValidationMessage validationError
-        , viewSelectionSummary fieldCount
         ]
 
 
@@ -126,12 +133,105 @@ viewBulkActions selectedCount totalCount =
         ]
 
 
-{-| List of all available fields with checkboxes and samples
+{-| Selected fields list with ordering controls (CSV column order)
 -}
-viewFieldList : Model -> FileData -> FileData -> ProcessedData -> Html Msg
-viewFieldList model masterFile dataFile previewData =
-    div [ class "field-selection-list" ]
-        (List.map (viewFieldOption model masterFile dataFile previewData) model.availableFields)
+viewSelectedFieldsList : Model -> Html Msg
+viewSelectedFieldsList model =
+    div [ class "selected-fields-section" ]
+        [ h3 [ class "section-title" ] [ text "Selected Fields (CSV Column Order)" ]
+        , if List.isEmpty model.selectedFieldsOrder then
+            div [ class "empty-selection" ]
+                [ text "No fields selected. Choose fields from the Available Fields below." ]
+          else
+            div [ class "selected-fields-list" ]
+                (List.indexedMap (viewSelectedField model) model.selectedFieldsOrder)
+        ]
+
+
+{-| Available fields list (unselected fields that can be added)
+-}
+viewAvailableFieldsList : Model -> FileData -> FileData -> ProcessedData -> Html Msg
+viewAvailableFieldsList model masterFile dataFile previewData =
+    let
+        unselectedFields =
+            List.filter (\field -> not (Set.member field model.selectedFields)) model.availableFields
+    in
+    div [ class "available-fields-section" ]
+        [ h3 [ class "section-title" ] [ text "Available Fields" ]
+        , if List.isEmpty unselectedFields then
+            div [ class "empty-available" ]
+                [ text "All fields have been selected." ]
+          else
+            div [ class "available-fields-list" ]
+                (List.map (viewAvailableField model masterFile dataFile previewData) unselectedFields)
+        ]
+
+
+{-| Individual selected field with ordering controls
+-}
+viewSelectedField : Model -> Int -> String -> Html Msg
+viewSelectedField model index fieldName =
+    let
+        canMoveUp = index > 0
+        canMoveDown = index < (List.length model.selectedFieldsOrder - 1)
+        fieldId = "selected-field-" ++ fieldName
+    in
+    div [ class "selected-field-item" ]
+        [ div [ class "field-info" ]
+            [ span [ class "field-name" ] [ text fieldName ]
+            , span [ class "field-position" ] [ text ("Column " ++ String.fromInt (index + 1)) ]
+            ]
+        , div [ class "field-controls" ]
+            [ button 
+                [ class "btn btn--icon btn--small"
+                , onClick (SelectFieldsMsg (MoveFieldUp fieldName))
+                , disabled (not canMoveUp)
+                ]
+                [ text "↑" ]
+            , button 
+                [ class "btn btn--icon btn--small"
+                , onClick (SelectFieldsMsg (MoveFieldDown fieldName))
+                , disabled (not canMoveDown)
+                ]
+                [ text "↓" ]
+            , button 
+                [ class "btn btn--icon btn--small btn--remove"
+                , onClick (SelectFieldsMsg (ToggleField fieldName))
+                ]
+                [ text "×" ]
+            ]
+        ]
+
+
+{-| Individual available field that can be selected
+-}
+viewAvailableField : Model -> FileData -> FileData -> ProcessedData -> String -> Html Msg
+viewAvailableField model masterFile dataFile previewData fieldName =
+    let
+        fieldSource =
+            categorizeField masterFile dataFile fieldName
+
+        sampleValues =
+            getFieldSamples fieldName previewData
+
+        fieldId =
+            "available-field-" ++ fieldName
+    in
+    div [ class "available-field-item" ]
+        [ div [ class "field-content" ]
+            [ div [ class "field-header" ]
+                [ span [ class "field-name" ] [ text fieldName ]
+                , span [ class "field-source" ]
+                    [ text (fieldSourceToString fieldSource) ]
+                ]
+            , viewFieldPreview sampleValues
+            ]
+        , button 
+            [ class "btn btn--primary btn--small"
+            , onClick (SelectFieldsMsg (ToggleField fieldName))
+            ]
+            [ text "Add" ]
+        ]
 
 
 {-| Individual field option with checkbox, label, source indicator, and sample data
@@ -209,13 +309,85 @@ viewValidationMessage maybeError =
             text ""
 
 
-{-| Selection summary
+{-| CSV Preview Grid showing what the output will look like
 -}
-viewSelectionSummary : Int -> Html msg
-viewSelectionSummary fieldCount =
-    div [ class "selection-summary" ]
-        [ p []
-            [ text "Selected fields will be included in your CSV output in the order they appear above." ]
+viewCSVPreview : Model -> FileData -> FileData -> ProcessedData -> Html msg
+viewCSVPreview model masterFile dataFile previewData =
+    div [ class "csv-preview-section" ]
+        [ div [ class "preview-header" ]
+            [ h3 [ class "section-title" ] [ text "CSV Preview" ]
+            , p [ class "preview-description" ] 
+                [ text "This shows exactly what your CSV output will look like with the selected fields." ]
+            ]
+        , if List.isEmpty model.selectedFieldsOrder then
+            div [ class "preview-empty" ]
+                [ text "Select fields to see CSV preview" ]
+          else
+            viewCSVPreviewGrid model masterFile dataFile previewData
+        ]
+
+
+{-| CSV Preview Grid with actual data
+-}
+viewCSVPreviewGrid : Model -> FileData -> FileData -> ProcessedData -> Html msg
+viewCSVPreviewGrid model masterFile dataFile previewData =
+    let
+        -- Get sample rows from preview data  
+        sampleRows = List.take 5 previewData.matchedRecords
+        
+        -- Create combined field mapping
+        fieldMapping = createFieldMapping masterFile dataFile
+    in
+    div [ class "csv-preview-grid" ]
+        [ div [ class "csv-table" ]
+            [ div [ class "csv-header" ]
+                (List.map viewCSVHeaderCell model.selectedFieldsOrder)
+            , div [ class "csv-body" ]
+                (List.indexedMap (viewCSVDataRow model.selectedFieldsOrder fieldMapping) sampleRows)
+            ]
+        , viewCSVPreviewInfo (List.length sampleRows) (List.length model.selectedFieldsOrder)
+        ]
+
+
+{-| CSV Header Cell
+-}
+viewCSVHeaderCell : String -> Html msg
+viewCSVHeaderCell fieldName =
+    div [ class "csv-header-cell" ]
+        [ text fieldName ]
+
+
+{-| CSV Data Row
+-}
+viewCSVDataRow : List String -> Dict.Dict String Int -> Int -> MatchedRecord -> Html msg
+viewCSVDataRow selectedFields fieldMapping rowIndex record =
+    let
+        -- Combine master and data rows for field lookup
+        allFields = record.masterRow ++ record.dataRow
+        
+        rowValues = List.map (getFieldValue allFields fieldMapping) selectedFields
+    in
+    div [ class "csv-data-row" ]
+        (List.map viewCSVDataCell rowValues)
+
+
+{-| CSV Data Cell
+-}
+viewCSVDataCell : String -> Html msg
+viewCSVDataCell value =
+    div [ class "csv-data-cell" ]
+        [ text (if String.isEmpty value then "(empty)" else value) ]
+
+
+{-| CSV Preview Information
+-}
+viewCSVPreviewInfo : Int -> Int -> Html msg
+viewCSVPreviewInfo rowCount columnCount =
+    div [ class "csv-preview-info" ]
+        [ p [ class "preview-stats" ]
+            [ text ("Showing " ++ String.fromInt rowCount ++ " sample rows with " ++ String.fromInt columnCount ++ " columns") ]
+        , p [ class "preview-note" ]
+            [ text "The actual CSV will contain all matched records from your data processing." ]
         ]
 
 
@@ -268,16 +440,12 @@ extractAvailableFields maybePreviewData maybeMasterFile maybeDataFile =
             []
 
 
-{-| Initialize selected fields with default selection (data spreadsheet fields)
+{-| Initialize selected fields with default selection (empty - let users choose)
 -}
 initializeSelectedFields : Maybe FileData -> Set String
 initializeSelectedFields maybeDataFile =
-    case maybeDataFile of
-        Just dataFile ->
-            Set.fromList dataFile.headers
-
-        Nothing ->
-            Set.empty
+    -- Start with empty selection - let users choose which fields they want
+    Set.empty
 
 
 {-| Get sample values for a field from preview data
@@ -365,3 +533,36 @@ removeDuplicatesHelper remaining acc =
 
             else
                 removeDuplicatesHelper tail (head :: acc)
+
+
+{-| Create field mapping for CSV preview (maps field names to indices)
+-}
+createFieldMapping : FileData -> FileData -> Dict String Int
+createFieldMapping masterFile dataFile =
+    let
+        -- Create mapping for master file fields (indices 0 to n-1)
+        masterMapping = 
+            List.indexedMap (\index field -> (field, index)) masterFile.headers
+            |> Dict.fromList
+        
+        -- Create mapping for data file fields (indices start after master fields)
+        dataMapping = 
+            List.indexedMap (\index field -> (field, index + List.length masterFile.headers)) dataFile.headers
+            |> Dict.fromList
+    in
+    Dict.union masterMapping dataMapping
+
+
+{-| Get field value from combined row data using field mapping
+-}
+getFieldValue : List String -> Dict String Int -> String -> String
+getFieldValue allFields fieldMapping fieldName =
+    case Dict.get fieldName fieldMapping of
+        Just index ->
+            case List.head (List.drop index allFields) of
+                Just value ->
+                    value
+                Nothing ->
+                    ""
+        Nothing ->
+            ""

@@ -123,12 +123,21 @@ update msg model =
 
                                     else
                                         model.selectedFields
+
+                                selectedFieldsOrder =
+                                    if List.isEmpty model.selectedFieldsOrder then
+                                        -- Initialize order from selected fields
+                                        Set.toList selectedFields
+                                    else
+                                        -- Keep existing order, but filter out any fields that are no longer available
+                                        List.filter (\field -> Set.member field selectedFields) model.selectedFieldsOrder
                                 
                             in
                             { model
                                 | currentStep = nextStep
                                 , availableFields = availableFields
                                 , selectedFields = selectedFields
+                                , selectedFieldsOrder = selectedFieldsOrder
                             }
 
                         else
@@ -702,26 +711,111 @@ updateSelectFieldsStep selectFieldsMsg model =
     case selectFieldsMsg of
         ToggleField fieldName ->
             let
-                updatedFields =
-                    if Set.member fieldName model.selectedFields then
-                        Set.remove fieldName model.selectedFields
-
+                isCurrentlySelected = Set.member fieldName model.selectedFields
+                
+                (updatedFields, updatedOrder) =
+                    if isCurrentlySelected then
+                        -- Removing field
+                        ( Set.remove fieldName model.selectedFields
+                        , List.filter ((/=) fieldName) model.selectedFieldsOrder
+                        )
                     else
-                        Set.insert fieldName model.selectedFields
+                        -- Adding field
+                        ( Set.insert fieldName model.selectedFields
+                        , model.selectedFieldsOrder ++ [fieldName]
+                        )
             in
-            ( { model | selectedFields = updatedFields }, Cmd.none )
+            ( { model | selectedFields = updatedFields, selectedFieldsOrder = updatedOrder }, Cmd.none )
 
         SelectAllFields ->
             let
                 allFieldsSet =
                     Set.fromList model.availableFields
+                allFieldsOrder =
+                    model.availableFields
             in
-            ( { model | selectedFields = allFieldsSet }, Cmd.none )
+            ( { model | selectedFields = allFieldsSet, selectedFieldsOrder = allFieldsOrder }, Cmd.none )
 
         ClearAllFields ->
-            ( { model | selectedFields = Set.empty }, Cmd.none )
+            ( { model | selectedFields = Set.empty, selectedFieldsOrder = [] }, Cmd.none )
+
+        MoveFieldUp fieldName ->
+            let
+                updatedOrder = moveFieldUp fieldName model.selectedFieldsOrder
+            in
+            ( { model | selectedFieldsOrder = updatedOrder }, Cmd.none )
+
+        MoveFieldDown fieldName ->
+            let
+                updatedOrder = moveFieldDown fieldName model.selectedFieldsOrder
+            in
+            ( { model | selectedFieldsOrder = updatedOrder }, Cmd.none )
+
+        ReorderFields newOrder ->
+            ( { model | selectedFieldsOrder = newOrder }, Cmd.none )
 
         ValidateFieldSelection ->
             -- Validation happens automatically in the view
             -- This message is just for future extensibility
             ( model, Cmd.none )
+
+
+{-| Move a field up in the order list
+-}
+moveFieldUp : String -> List String -> List String
+moveFieldUp fieldName fields =
+    case fields of
+        [] ->
+            []
+
+        first :: rest ->
+            if first == fieldName then
+                -- Already at the top
+                fields
+
+            else
+                first :: moveFieldUpHelper fieldName rest
+
+
+{-| Helper function to move field up
+-}
+moveFieldUpHelper : String -> List String -> List String
+moveFieldUpHelper fieldName fields =
+    case fields of
+        [] ->
+            []
+
+        first :: rest ->
+            if first == fieldName then
+                -- Swap with previous
+                fieldName :: rest
+
+            else
+                first :: moveFieldUpHelper fieldName rest
+
+
+{-| Move a field down in the order list
+-}
+moveFieldDown : String -> List String -> List String
+moveFieldDown fieldName fields =
+    moveFieldDownHelper fieldName fields []
+
+
+{-| Helper function to move field down
+-}
+moveFieldDownHelper : String -> List String -> List String -> List String
+moveFieldDownHelper fieldName remaining acc =
+    case remaining of
+        [] ->
+            List.reverse acc
+
+        first :: second :: rest ->
+            if first == fieldName then
+                -- Swap with next
+                List.reverse acc ++ [ second, first ] ++ rest
+
+            else
+                moveFieldDownHelper fieldName (second :: rest) (first :: acc)
+
+        [ single ] ->
+            List.reverse (single :: acc)

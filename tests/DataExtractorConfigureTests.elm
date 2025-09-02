@@ -66,6 +66,7 @@ initialModel =
     , matchConfig = Nothing
     , processedData = Nothing
     , selectedFields = Set.empty
+    , selectedFieldsOrder = []
     , availableFields = []
     , isSelectingFields = False
     , selectedMasterColumns = []

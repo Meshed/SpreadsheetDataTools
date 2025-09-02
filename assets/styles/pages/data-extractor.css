@@ -2285,6 +2285,315 @@
   margin: var(--spacing-lg) 0;
 }
 
+/* Two-Panel Layout */
+.field-selection-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+  min-height: 600px;
+}
+
+.field-selection-panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.csv-preview-panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--spacing-lg);
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-md) 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+/* Selected Fields Section */
+.selected-fields-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.selected-fields-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.selected-field-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background-color: var(--color-success-light);
+  border: 1px solid var(--color-success);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.selected-field-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+.field-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+}
+
+.field-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-success-dark);
+}
+
+.field-position {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.field-controls {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.btn--icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.btn--remove {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.btn--remove:hover {
+  background-color: var(--color-error-dark);
+}
+
+.empty-selection,
+.empty-available {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-muted);
+  font-style: italic;
+  background-color: var(--color-background-light);
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+}
+
+/* Available Fields Section */
+.available-fields-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.available-fields-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.available-field-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.available-field-item:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.field-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.field-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.available-field-item .field-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.available-field-item .field-source {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background-color: var(--color-background-muted);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid var(--color-border-light);
+}
+
+/* CSV Preview Section */
+.csv-preview-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.preview-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.preview-description {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin: var(--spacing-xs) 0 0 0;
+  line-height: 1.5;
+}
+
+.preview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  background-color: var(--color-background-light);
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  font-size: 1rem;
+}
+
+/* CSV Preview Grid */
+.csv-preview-grid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.csv-table {
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: var(--spacing-md);
+}
+
+.csv-header {
+  display: flex;
+  background-color: var(--color-primary-light);
+  border-bottom: 2px solid var(--color-primary);
+  overflow-x: auto;
+}
+
+.csv-header-cell {
+  min-width: 120px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  text-align: center;
+  border-right: 1px solid var(--color-border);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.csv-header-cell:last-child {
+  border-right: none;
+}
+
+.csv-body {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.csv-data-row {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color 0.2s ease;
+  overflow-x: auto;
+}
+
+.csv-data-row:hover {
+  background-color: var(--color-background-light);
+}
+
+.csv-data-row:last-child {
+  border-bottom: none;
+}
+
+.csv-data-cell {
+  min-width: 120px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.85rem;
+  color: var(--color-text);
+  border-right: 1px solid var(--color-border-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.csv-data-cell:last-child {
+  border-right: none;
+}
+
+/* CSV Preview Information */
+.csv-preview-info {
+  padding: var(--spacing-md);
+  background-color: var(--color-info-light);
+  border: 1px solid var(--color-info);
+  border-radius: 6px;
+}
+
+.preview-stats {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-info-dark);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.preview-note {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* Bulk Actions Section */
 .bulk-actions {
   display: flex;
@@ -2539,15 +2848,81 @@
   min-width: 90px;
 }
 
-/* Responsive Design for Select Fields Step */
+/* Responsive Design for Step 4 - Two-Panel Layout */
+@media (max-width: 1024px) {
+  .field-selection-panels {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+  
+  .csv-preview-panel {
+    order: 1; /* Show CSV preview first on tablets */
+  }
+  
+  .field-selection-panel {
+    order: 2;
+  }
+  
+  .csv-header-cell,
+  .csv-data-cell {
+    min-width: 100px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Mobile Responsive Design for Select Fields Step */
 @media (max-width: 768px) {
   .select-fields-step {
     padding: var(--spacing-lg) var(--spacing-md);
   }
   
-  .field-selection-list {
+  .field-selection-panels {
     grid-template-columns: 1fr;
     gap: var(--spacing-md);
+    min-height: auto;
+  }
+  
+  .field-selection-panel,
+  .csv-preview-panel {
+    padding: var(--spacing-md);
+  }
+  
+  .selected-fields-list,
+  .available-fields-list {
+    max-height: 250px;
+  }
+  
+  .selected-field-item,
+  .available-field-item {
+    padding: var(--spacing-sm);
+  }
+  
+  .field-controls {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+  
+  .btn--icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+  
+  /* CSV Preview Mobile Adjustments */
+  .csv-header-cell,
+  .csv-data-cell {
+    min-width: 80px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.75rem;
+  }
+  
+  .csv-body {
+    max-height: 200px;
+  }
+  
+  .csv-header,
+  .csv-data-row {
+    -webkit-overflow-scrolling: touch;
   }
   
   .bulk-actions {
