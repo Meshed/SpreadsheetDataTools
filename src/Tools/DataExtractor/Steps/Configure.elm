@@ -22,15 +22,262 @@ view model =
             [ p [] [ text "Columns match by selection order - 1st selected master column matches 1st selected data column, etc." ] ]
         , Html.map ConfigureMsg (renderValidationError (validateCurrentSelections model.selectedMasterColumns model.selectedDataColumns))
         , div [ class "configure-step__content" ]
-            [ div [ class "configure-step__columns" ]
-                [ Html.map ConfigureMsg (renderMasterColumns model.masterFile model.selectedMasterColumns)
-                , Html.map ConfigureMsg (renderDataColumns model.dataFile model.selectedDataColumns)
-                ]
-            , Html.map ConfigureMsg (renderMatchingPairs model.selectedMasterColumns model.selectedDataColumns)
+            [ Html.map ConfigureMsg (renderInteractiveGrid model.masterFile model.dataFile model.selectedMasterColumns model.selectedDataColumns)
+            , Html.map ConfigureMsg (renderMatchingSummary model.selectedMasterColumns model.selectedDataColumns)
             , Html.map ConfigureMsg (renderFuzzyOption (getFuzzyMatchingEnabled model.matchConfig))
-            , Html.map ConfigureMsg (renderSamplePreview model.masterFile model.dataFile model.selectedMasterColumns model.selectedDataColumns)
             ]
         , renderNavigationButtons model.selectedMasterColumns model.selectedDataColumns
+        ]
+
+
+{-| Render interactive grid layout for column matching
+-}
+renderInteractiveGrid : Maybe FileData -> Maybe FileData -> List String -> List String -> Html ConfigureMsg
+renderInteractiveGrid masterFile dataFile selectedMasterColumns selectedDataColumns =
+    div [ class "matching-grid" ]
+        [ div [ class "matching-grid__container" ]
+            [ div [ class "matching-grid__master" ]
+                [ h3 [ class "matching-grid__title" ] [ text "Master Columns" ]
+                , case masterFile of
+                    Nothing ->
+                        p [ class "matching-grid__empty" ] [ text "No master file loaded" ]
+                    
+                    Just fileData ->
+                        div [ class "matching-grid__column-list" ]
+                            (List.map (renderGridMasterColumn selectedMasterColumns selectedDataColumns) fileData.headers)
+                ]
+            , div [ class "matching-grid__data" ]
+                [ h3 [ class "matching-grid__title" ] [ text "Data Columns" ]
+                , case dataFile of
+                    Nothing ->
+                        p [ class "matching-grid__empty" ] [ text "No data file loaded" ]
+                    
+                    Just fileData ->
+                        div [ class "matching-grid__column-list" ]
+                            (List.map (renderGridDataColumn selectedMasterColumns selectedDataColumns) fileData.headers)
+                ]
+            , div [ class "matching-grid__preview" ]
+                [ h3 [ class "matching-grid__title" ] [ text "Sample Preview" ]
+                , renderCompactSamplePreview masterFile dataFile selectedMasterColumns selectedDataColumns
+                ]
+            ]
+        ]
+
+
+{-| Render compact sample preview for the grid
+-}
+renderCompactSamplePreview : Maybe FileData -> Maybe FileData -> List String -> List String -> Html ConfigureMsg
+renderCompactSamplePreview masterFile dataFile selectedMasterColumns selectedDataColumns =
+    if List.isEmpty selectedMasterColumns && List.isEmpty selectedDataColumns then
+        div [ class "compact-preview__empty" ]
+            [ p [] [ text "Select columns to see sample data" ] ]
+    else
+        div [ class "compact-preview__content" ]
+            [ div [ class "compact-preview__side-by-side" ]
+                [ renderCompactPreviewTable masterFile selectedMasterColumns "Master"
+                , renderCompactPreviewTable dataFile selectedDataColumns "Data"
+                ]
+            ]
+
+
+{-| Render compact preview table
+-}
+renderCompactPreviewTable : Maybe FileData -> List String -> String -> Html ConfigureMsg
+renderCompactPreviewTable maybeFileData selectedColumns tableType =
+    case maybeFileData of
+        Nothing ->
+            div [ class "compact-preview__table" ]
+                [ p [ class "compact-preview__no-data" ] [ text ("No " ++ tableType ++ " file loaded") ] ]
+        
+        Just fileData ->
+            if List.isEmpty selectedColumns then
+                div [ class "compact-preview__table" ]
+                    [ p [ class "compact-preview__no-columns" ] [ text ("No " ++ tableType ++ " columns selected") ] ]
+            else
+                let
+                    sampleRows = List.take 3 fileData.rows
+                    selectedData = List.map (getSelectedRowData fileData.headers selectedColumns) sampleRows
+                in
+                div [ class "compact-preview__table" ]
+                    [ div [ class "compact-preview__header" ] [ text (tableType ++ " Sample") ]
+                    , div [ class "compact-preview__rows" ]
+                        (List.map (renderCompactRow selectedColumns) selectedData)
+                    ]
+
+
+{-| Render compact preview row
+-}
+renderCompactRow : List String -> List String -> Html ConfigureMsg
+renderCompactRow columns values =
+    div [ class "compact-preview__row" ]
+        (List.map2 renderCompactCell columns values)
+
+
+{-| Render compact preview cell
+-}
+renderCompactCell : String -> String -> Html ConfigureMsg
+renderCompactCell column value =
+    div [ class "compact-preview__cell" ]
+        [ div [ class "compact-preview__cell-header" ] [ text column ]
+        , div [ class "compact-preview__cell-value" ] [ text (String.left 20 value) ]
+        ]
+
+
+{-| Get selected row data for preview
+-}
+getSelectedRowData : List String -> List String -> List String -> List String
+getSelectedRowData headers selectedColumns rowData =
+    List.map (\col -> 
+        case findColumnIndex col headers of
+            Just index -> 
+                List.drop index rowData |> List.head |> Maybe.withDefault ""
+            Nothing -> 
+                ""
+    ) selectedColumns
+
+
+{-| Find column index in headers
+-}
+findColumnIndex : String -> List String -> Maybe Int
+findColumnIndex target headers =
+    List.indexedMap Tuple.pair headers
+        |> List.filter (\(_, header) -> header == target)
+        |> List.head
+        |> Maybe.map (\(index, _) -> index)
+
+
+{-| Render master column in grid layout
+-}
+renderGridMasterColumn : List String -> List String -> String -> Html ConfigureMsg
+renderGridMasterColumn selectedMasterColumns selectedDataColumns column =
+    let
+        isSelected = List.member column selectedMasterColumns
+        maybeMatchIndex = getSelectionIndex column selectedMasterColumns
+        hasMatch = case maybeMatchIndex of
+            Just index -> index <= List.length selectedDataColumns
+            Nothing -> False
+        matchedDataColumn = 
+            case maybeMatchIndex of
+                Just index -> 
+                    List.drop (index - 1) selectedDataColumns |> List.head |> Maybe.withDefault ""
+                Nothing -> 
+                    ""
+        
+        columnClass =
+            if isSelected then
+                "matching-grid__column matching-grid__column--selected"
+            else
+                "matching-grid__column"
+    in
+    div [ class columnClass, onClick (toggleMasterColumn column) ]
+        [ div [ class "matching-grid__column-header" ]
+            [ input [ type_ "checkbox", checked isSelected ] []
+            , span [ class "matching-grid__column-name" ] [ text column ]
+            ]
+        , if hasMatch then
+            div [ class "matching-grid__match-info" ]
+                [ span [ class "matching-grid__arrow" ] [ text "→" ]
+                , span [ class "matching-grid__matched" ] [ text matchedDataColumn ]
+                ]
+          else
+            div [ class "matching-grid__match-info" ] []
+        ]
+
+
+{-| Render data column in grid layout
+-}
+renderGridDataColumn : List String -> List String -> String -> Html ConfigureMsg
+renderGridDataColumn selectedMasterColumns selectedDataColumns column =
+    let
+        isSelected = List.member column selectedDataColumns
+        maybeMatchIndex = getSelectionIndex column selectedDataColumns
+        hasMatch = case maybeMatchIndex of
+            Just index -> index <= List.length selectedMasterColumns
+            Nothing -> False
+        matchedMasterColumn = 
+            case maybeMatchIndex of
+                Just index -> 
+                    List.drop (index - 1) selectedMasterColumns |> List.head |> Maybe.withDefault ""
+                Nothing -> 
+                    ""
+        
+        columnClass =
+            if isSelected then
+                "matching-grid__column matching-grid__column--selected"
+            else
+                "matching-grid__column"
+    in
+    div [ class columnClass, onClick (toggleDataColumn column) ]
+        [ div [ class "matching-grid__column-header" ]
+            [ input [ type_ "checkbox", checked isSelected ] []
+            , span [ class "matching-grid__column-name" ] [ text column ]
+            ]
+        , if hasMatch then
+            div [ class "matching-grid__match-info" ]
+                [ span [ class "matching-grid__matched" ] [ text matchedMasterColumn ]
+                , span [ class "matching-grid__arrow" ] [ text "→" ]
+                ]
+          else
+            div [ class "matching-grid__match-info" ] []
+        ]
+
+
+{-| Toggle master column selection
+-}
+toggleMasterColumn : String -> ConfigureMsg
+toggleMasterColumn column =
+    SelectMasterColumn column
+
+
+{-| Toggle data column selection  
+-}
+toggleDataColumn : String -> ConfigureMsg
+toggleDataColumn column =
+    SelectDataColumn column
+
+
+{-| Render matching summary section
+-}
+renderMatchingSummary : List String -> List String -> Html ConfigureMsg
+renderMatchingSummary selectedMasterColumns selectedDataColumns =
+    let
+        matches = List.map2 Tuple.pair selectedMasterColumns selectedDataColumns
+        unmatchedMaster = List.drop (List.length selectedDataColumns) selectedMasterColumns
+        unmatchedData = List.drop (List.length selectedMasterColumns) selectedDataColumns
+    in
+    div [ class "matching-summary" ]
+        [ h4 [ class "matching-summary__title" ] [ text "Current Matches" ]
+        , if List.isEmpty matches then
+            p [ class "matching-summary__empty" ] [ text "No columns matched yet. Select columns from both sides to create matches." ]
+          else
+            div [ class "matching-summary__matches" ]
+                (List.indexedMap renderMatch matches)
+        , if not (List.isEmpty unmatchedMaster) then
+            div [ class "matching-summary__unmatched" ]
+                [ span [ class "matching-summary__label" ] [ text "Unmatched Master: " ]
+                , span [ class "matching-summary__columns" ] [ text (String.join ", " unmatchedMaster) ]
+                ]
+          else
+            text ""
+        , if not (List.isEmpty unmatchedData) then
+            div [ class "matching-summary__unmatched" ]
+                [ span [ class "matching-summary__label" ] [ text "Unmatched Data: " ]
+                , span [ class "matching-summary__columns" ] [ text (String.join ", " unmatchedData) ]
+                ]
+          else
+            text ""
+        ]
+
+
+{-| Render individual match
+-}
+renderMatch : Int -> ( String, String ) -> Html ConfigureMsg
+renderMatch index ( masterCol, dataCol ) =
+    div [ class "matching-summary__match" ]
+        [ span [ class "matching-summary__index" ] [ text (String.fromInt (index + 1) ++ ".") ]
+        , span [ class "matching-summary__master" ] [ text masterCol ]
+        , span [ class "matching-summary__arrow" ] [ text "↔" ]
+        , span [ class "matching-summary__data" ] [ text dataCol ]
         ]
 
 
