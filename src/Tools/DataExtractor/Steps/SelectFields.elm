@@ -16,16 +16,15 @@ import Html exposing (Html, button, div, h2, h3, h4, input, label, p, span, text
 import Html.Attributes exposing (checked, class, disabled, for, id, type_)
 import Html.Events exposing (onCheck, onClick)
 import Set exposing (Set)
-import Tools.DataExtractor.Model exposing (FileData, MatchedRecord, Model, ProcessedData, SelectFieldsMsg(..))
+import Tools.DataExtractor.Model exposing (FileData, MatchedRecord, Model, ProcessedData, SelectFieldsMsg(..), Msg(..))
 
 
 {-| View function for the Select Fields step
 -}
-view : Model -> Html SelectFieldsMsg
+view : Model -> Html Msg
 view model =
     div [ class "select-fields-step" ]
         [ viewHeader
-        , viewProgressIndicator
         , viewFieldSelectionContent model
         , viewNavigationActions model
         ]
@@ -42,25 +41,11 @@ viewHeader =
         ]
 
 
-{-| Progress indicator showing step 4 of 5
--}
-viewProgressIndicator : Html msg
-viewProgressIndicator =
-    div [ class "wizard__progress" ]
-        [ div [ class "wizard__progress-bar" ]
-            [ div [ class "wizard__step wizard__step--completed" ] [ text "1" ]
-            , div [ class "wizard__step wizard__step--completed" ] [ text "2" ]
-            , div [ class "wizard__step wizard__step--completed" ] [ text "3" ]
-            , div [ class "wizard__step wizard__step--active" ] [ text "4" ]
-            , div [ class "wizard__step wizard__step--inactive" ] [ text "5" ]
-            ]
-        , p [ class "wizard__step-label" ] [ text "Step 4 of 5: Select Output Fields" ]
-        ]
 
 
 {-| Main field selection content
 -}
-viewFieldSelectionContent : Model -> Html SelectFieldsMsg
+viewFieldSelectionContent : Model -> Html Msg
 viewFieldSelectionContent model =
     if model.isSelectingFields then
         viewLoadingState
@@ -96,7 +81,7 @@ viewErrorState error =
 
 {-| Main field selection interface
 -}
-viewFieldSelection : Model -> FileData -> FileData -> ProcessedData -> Html SelectFieldsMsg
+viewFieldSelection : Model -> FileData -> FileData -> ProcessedData -> Html Msg
 viewFieldSelection model masterFile dataFile previewData =
     let
         fieldCount =
@@ -119,7 +104,7 @@ viewFieldSelection model masterFile dataFile previewData =
 
 {-| Bulk selection actions (Select All / Clear All)
 -}
-viewBulkActions : Int -> Int -> Html SelectFieldsMsg
+viewBulkActions : Int -> Int -> Html Msg
 viewBulkActions selectedCount totalCount =
     div [ class "bulk-actions" ]
         [ p [ class "selection-count" ]
@@ -127,13 +112,13 @@ viewBulkActions selectedCount totalCount =
         , div [ class "bulk-buttons" ]
             [ button
                 [ class "btn btn--outline btn--small"
-                , onClick SelectAllFields
+                , onClick (SelectFieldsMsg SelectAllFields)
                 , disabled (selectedCount == totalCount)
                 ]
                 [ text "Select All" ]
             , button
                 [ class "btn btn--outline btn--small"
-                , onClick ClearAllFields
+                , onClick (SelectFieldsMsg ClearAllFields)
                 , disabled (selectedCount == 0)
                 ]
                 [ text "Clear All" ]
@@ -143,7 +128,7 @@ viewBulkActions selectedCount totalCount =
 
 {-| List of all available fields with checkboxes and samples
 -}
-viewFieldList : Model -> FileData -> FileData -> ProcessedData -> Html SelectFieldsMsg
+viewFieldList : Model -> FileData -> FileData -> ProcessedData -> Html Msg
 viewFieldList model masterFile dataFile previewData =
     div [ class "field-selection-list" ]
         (List.map (viewFieldOption model masterFile dataFile previewData) model.availableFields)
@@ -151,7 +136,7 @@ viewFieldList model masterFile dataFile previewData =
 
 {-| Individual field option with checkbox, label, source indicator, and sample data
 -}
-viewFieldOption : Model -> FileData -> FileData -> ProcessedData -> String -> Html SelectFieldsMsg
+viewFieldOption : Model -> FileData -> FileData -> ProcessedData -> String -> Html Msg
 viewFieldOption model masterFile dataFile previewData fieldName =
     let
         isSelected =
@@ -172,7 +157,7 @@ viewFieldOption model masterFile dataFile previewData fieldName =
                 [ type_ "checkbox"
                 , id fieldId
                 , checked isSelected
-                , onCheck (\_ -> ToggleField fieldName)
+                , onCheck (\_ -> SelectFieldsMsg (ToggleField fieldName))
                 ]
                 []
             ]
@@ -236,7 +221,7 @@ viewSelectionSummary fieldCount =
 
 {-| Navigation actions for Select Fields step
 -}
-viewNavigationActions : Model -> Html SelectFieldsMsg
+viewNavigationActions : Model -> Html Msg
 viewNavigationActions model =
     let
         canProceed =
@@ -245,13 +230,13 @@ viewNavigationActions model =
     div [ class "select-fields-actions wizard__actions" ]
         [ button
             [ class "btn btn--secondary"
-            , onClick ValidateFieldSelection -- This will trigger navigation back
+            , onClick PreviousStep
             ]
             [ text "Back to Preview" ]
         , button
             [ class "btn btn--primary"
             , disabled (not canProceed)
-            , onClick ValidateFieldSelection -- This will trigger navigation forward
+            , onClick NextStep
             ]
             [ text "Next: Download Results" ]
         ]
@@ -265,52 +250,21 @@ viewNavigationActions model =
 -}
 extractAvailableFields : Maybe ProcessedData -> Maybe FileData -> Maybe FileData -> List String
 extractAvailableFields maybePreviewData maybeMasterFile maybeDataFile =
-    case maybePreviewData of
-        Just previewData ->
-            -- Use processed data if available (preferred)
-            extractFieldsFromProcessedData previewData
+    -- Always use FileData headers as they contain the actual column names
+    -- ProcessedData contains matched records but not the header information
+    case ( maybeMasterFile, maybeDataFile ) of
+        ( Just masterFile, Just dataFile ) ->
+            List.concat [ masterFile.headers, dataFile.headers ]
+                |> removeDuplicates
+                |> List.sort
 
-        Nothing ->
-            -- Fallback to raw FileData headers
-            case ( maybeMasterFile, maybeDataFile ) of
-                ( Just masterFile, Just dataFile ) ->
-                    List.concat [ masterFile.headers, dataFile.headers ]
-                        |> removeDuplicates
-                        |> List.sort
+        ( Just masterFile, Nothing ) ->
+            masterFile.headers
 
-                ( Just masterFile, Nothing ) ->
-                    masterFile.headers
+        ( Nothing, Just dataFile ) ->
+            dataFile.headers
 
-                ( Nothing, Just dataFile ) ->
-                    dataFile.headers
-
-                ( Nothing, Nothing ) ->
-                    []
-
-
-{-| Extract fields from processed data (includes all fields from matched records)
--}
-extractFieldsFromProcessedData : ProcessedData -> List String
-extractFieldsFromProcessedData processedData =
-    case List.head processedData.matchedRecords of
-        Just firstRecord ->
-            let
-                masterFieldCount =
-                    List.length firstRecord.masterRow
-
-                dataFieldCount =
-                    List.length firstRecord.dataRow
-
-                -- Generate field names based on record structure
-                masterFields =
-                    List.range 0 (masterFieldCount - 1) |> List.map (\i -> "Master_" ++ String.fromInt i)
-
-                dataFields =
-                    List.range 0 (dataFieldCount - 1) |> List.map (\i -> "Data_" ++ String.fromInt i)
-            in
-            masterFields ++ dataFields
-
-        Nothing ->
+        ( Nothing, Nothing ) ->
             []
 
 

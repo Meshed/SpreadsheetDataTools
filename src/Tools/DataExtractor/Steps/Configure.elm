@@ -306,10 +306,11 @@ renderNavigationButtons masterColumns dataColumns =
     let
         canProceed =
             not (List.isEmpty masterColumns) && not (List.isEmpty dataColumns)
-        
+
         helpText =
             if not canProceed then
                 "Select at least one column from each spreadsheet to continue"
+
             else
                 "Ready to preview results"
     in
@@ -317,6 +318,7 @@ renderNavigationButtons masterColumns dataColumns =
         [ if not canProceed then
             div [ class "wizard-navigation__help" ]
                 [ text helpText ]
+
           else
             text ""
         , div [ class "wizard-navigation__buttons" ]

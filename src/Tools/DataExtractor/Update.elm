@@ -123,6 +123,7 @@ update msg model =
 
                                     else
                                         model.selectedFields
+                                
                             in
                             { model
                                 | currentStep = nextStep
@@ -549,9 +550,8 @@ updatePreviewStep previewMsg model =
             )
 
         NextToSelectFields ->
-            ( { model | currentStep = SelectFields }
-            , Cmd.none
-            )
+            -- Use the proper NextStep logic instead of just changing the step
+            update NextStep model
 
         -- Memory Management Messages
         CheckMemoryUsage ->

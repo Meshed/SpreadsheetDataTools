@@ -8,12 +8,12 @@ Shows sample matched records before field selection to verify matching logic.
 
 -}
 
-import Html exposing (Html, div, h2, h3, h4, h5, p, text, button, span, strong)
+import Html exposing (Html, button, div, h2, h3, h4, h5, p, span, strong, text)
 import Html.Attributes exposing (class, disabled)
 import Html.Events exposing (onClick)
-import Task exposing (Task)
 import Shared.Processing.Matching.Engine as Engine
-import Tools.DataExtractor.Model exposing (Model, PreviewMsg(..), MatchedRecord, ProcessingStats, ProcessedData, MatchConfig, FileData)
+import Task exposing (Task)
+import Tools.DataExtractor.Model exposing (FileData, MatchConfig, MatchedRecord, Model, PreviewMsg(..), ProcessedData, ProcessingStats)
 
 
 {-| View function for the Preview step
@@ -22,7 +22,6 @@ view : Model -> Html PreviewMsg
 view model =
     div [ class "preview-step" ]
         [ viewHeader
-        , viewProgressIndicator
         , viewPreviewContent model
         , viewNavigationActions model
         ]
@@ -39,20 +38,6 @@ viewHeader =
         ]
 
 
-{-| Progress indicator showing step 3 of 5
--}
-viewProgressIndicator : Html msg
-viewProgressIndicator =
-    div [ class "wizard__progress" ]
-        [ div [ class "wizard__progress-bar" ]
-            [ div [ class "wizard__step wizard__step--completed" ] [ text "1" ]
-            , div [ class "wizard__step wizard__step--completed" ] [ text "2" ]
-            , div [ class "wizard__step wizard__step--active" ] [ text "3" ]
-            , div [ class "wizard__step wizard__step--inactive" ] [ text "4" ]
-            , div [ class "wizard__step wizard__step--inactive" ] [ text "5" ]
-            ]
-        , p [ class "wizard__step-label" ] [ text "Step 3 of 5: Preview Results" ]
-        ]
 
 
 {-| Main preview content based on model state
@@ -61,6 +46,7 @@ viewPreviewContent : Model -> Html PreviewMsg
 viewPreviewContent model =
     if model.isGeneratingPreview then
         viewLoadingState
+
     else
         case model.previewError of
             Just error ->
@@ -71,6 +57,7 @@ viewPreviewContent model =
                     Just processedData ->
                         if List.isEmpty processedData.matchedRecords then
                             viewNoMatchesState
+
                         else
                             viewPreviewSamples processedData
 
@@ -134,7 +121,8 @@ viewNoMatchesState =
 viewPreviewSamples : { a | matchedRecords : List MatchedRecord, statistics : ProcessingStats } -> Html msg
 viewPreviewSamples processedData =
     let
-        previewRecords = List.take 3 processedData.matchedRecords
+        previewRecords =
+            List.take 3 processedData.matchedRecords
     in
     div [ class "preview-samples" ]
         [ div [ class "preview-summary" ]
@@ -156,7 +144,7 @@ viewPreviewSamples processedData =
 viewMatchedRecord : Int -> MatchedRecord -> Html msg
 viewMatchedRecord index record =
     div [ class "preview-sample" ]
-        [ h4 [ class "sample-title" ] 
+        [ h4 [ class "sample-title" ]
             [ text ("Match " ++ String.fromInt (index + 1)) ]
         , div [ class "matched-record" ]
             [ div [ class "master-record" ]
@@ -178,7 +166,8 @@ viewMatchedRecord index record =
 viewRecordFields : List String -> List String -> Html msg
 viewRecordFields values matchedFields =
     let
-        fieldPairs = List.indexedMap (\index value -> (index, value)) values
+        fieldPairs =
+            List.indexedMap (\index value -> ( index, value )) values
     in
     div [ class "record-fields" ]
         (List.map (viewField matchedFields) fieldPairs)
@@ -186,12 +175,21 @@ viewRecordFields values matchedFields =
 
 {-| Display individual field with highlighting if matched
 -}
-viewField : List String -> (Int, String) -> Html msg
-viewField matchedFields (index, value) =
+viewField : List String -> ( Int, String ) -> Html msg
+viewField matchedFields ( index, value ) =
     let
-        fieldIndex = String.fromInt index
-        isMatched = List.member fieldIndex matchedFields
-        fieldClass = if isMatched then "field field--matched" else "field"
+        fieldIndex =
+            String.fromInt index
+
+        isMatched =
+            List.member fieldIndex matchedFields
+
+        fieldClass =
+            if isMatched then
+                "field field--matched"
+
+            else
+                "field"
     in
     div [ class fieldClass ]
         [ span [ class "field-value" ] [ text value ] ]
@@ -202,15 +200,24 @@ viewField matchedFields (index, value) =
 viewMatchConfidence : Float -> Html msg
 viewMatchConfidence score =
     let
-        percentage = round (score * 100)
-        confidenceClass = 
-            if score >= 1.0 then "match-confidence match-confidence--exact"
-            else if score >= 0.9 then "match-confidence match-confidence--high"
-            else if score >= 0.7 then "match-confidence match-confidence--medium"
-            else "match-confidence match-confidence--low"
+        percentage =
+            round (score * 100)
+
+        confidenceClass =
+            if score >= 1.0 then
+                "match-confidence match-confidence--exact"
+
+            else if score >= 0.9 then
+                "match-confidence match-confidence--high"
+
+            else if score >= 0.7 then
+                "match-confidence match-confidence--medium"
+
+            else
+                "match-confidence match-confidence--low"
     in
     div [ class confidenceClass ]
-        [ span [] 
+        [ span []
             [ text "Match Confidence: "
             , strong [] [ text (String.fromInt percentage ++ "%") ]
             ]
@@ -222,16 +229,16 @@ viewMatchConfidence score =
 viewNavigationActions : Model -> Html PreviewMsg
 viewNavigationActions model =
     div [ class "preview-actions wizard__actions" ]
-        [ button 
+        [ button
             [ class "btn btn--secondary"
             , onClick ReturnToConfigure
-            ] 
+            ]
             [ text "Re-configure" ]
-        , button 
+        , button
             [ class "btn btn--primary"
             , disabled (model.previewData == Nothing)
             , onClick NextToSelectFields
-            ] 
+            ]
             [ text "Next: Select Fields" ]
         ]
 
@@ -241,42 +248,61 @@ Implements 500ms performance budget and 100MB memory budget (AC 9, 10)
 -}
 generatePreview : Model -> Cmd PreviewMsg
 generatePreview model =
-    case (model.masterFile, model.dataFile, model.matchConfig) of
-        (Just masterFile, Just dataFile, Just config) ->
+    case ( model.masterFile, model.dataFile, model.matchConfig ) of
+        ( Just masterFile, Just dataFile, Just config ) ->
             let
                 -- Performance optimization: Calculate optimal preview size based on file size
-                previewRowLimit = calculateOptimalPreviewSize masterFile dataFile
-                
+                previewRowLimit =
+                    calculateOptimalPreviewSize masterFile dataFile
+
                 -- Limit input data for preview performance (AC 9: 500ms budget)
-                masterRowsLimited = List.take previewRowLimit masterFile.rows
-                dataRowsLimited = List.take previewRowLimit dataFile.rows
-                
+                masterRowsLimited =
+                    List.take previewRowLimit masterFile.rows
+
+                dataRowsLimited =
+                    List.take previewRowLimit dataFile.rows
+
                 -- Memory validation (AC 10: 100MB budget)
-                totalSize = masterFile.fileSize + dataFile.fileSize
-                maxPreviewSize = 10 * 1024 * 1024  -- 10MB limit for preview generation
-                
+                totalSize =
+                    masterFile.fileSize + dataFile.fileSize
+
+                maxPreviewSize =
+                    10 * 1024 * 1024
+
+                -- 10MB limit for preview generation
                 -- Performance monitoring setup
-                startTime = 0.0  -- Would use Time.now in real implementation
-                
+                startTime =
+                    0.0
+
+                -- Would use Time.now in real implementation
                 result =
                     if totalSize > maxPreviewSize then
                         PreviewFailed ("Files too large for preview (" ++ String.fromInt (totalSize // (1024 * 1024)) ++ "MB). Maximum 10MB supported for preview generation.")
+
                     else if Tools.DataExtractor.Model.isMemoryUsageCritical model then
                         PreviewFailed "Memory usage too high. Please reduce file sizes or restart the application."
+
                     else
                         let
                             -- Generate preview with performance monitoring
-                            processedData = 
+                            processedData =
                                 Engine.matchRows config masterRowsLimited dataRowsLimited
-                                    |> limitToPreviewSize 3  -- Always limit to 3 for performance
+                                    |> limitToPreviewSize 3
+                                    -- Always limit to 3 for performance
                                     |> addPerformanceMetrics startTime
-                                    
+
                             -- Check if preview generation exceeded performance budget
-                            processingTime = processedData.statistics.processingTime
-                            performanceBudget = 500.0  -- 500ms budget (AC 9)
+                            processingTime =
+                                processedData.statistics.processingTime
+
+                            performanceBudget =
+                                500.0
+
+                            -- 500ms budget (AC 9)
                         in
                         if processingTime > performanceBudget then
                             PreviewFailed ("Preview generation took too long (" ++ String.fromFloat processingTime ++ "ms). Try reducing file sizes.")
+
                         else
                             PreviewGenerated processedData
             in
@@ -292,9 +318,10 @@ generatePreview model =
 -}
 limitToPreviewSize : Int -> ProcessedData -> ProcessedData
 limitToPreviewSize maxSamples processedData =
-    { processedData 
+    { processedData
         | matchedRecords = List.take maxSamples processedData.matchedRecords
     }
+
 
 
 -- PERFORMANCE OPTIMIZATION HELPER FUNCTIONS
@@ -305,25 +332,40 @@ limitToPreviewSize maxSamples processedData =
 calculateOptimalPreviewSize : FileData -> FileData -> Int
 calculateOptimalPreviewSize masterFile dataFile =
     let
-        totalRows = masterFile.rowCount + dataFile.rowCount
-        averageColumnCount = (masterFile.columnCount + dataFile.columnCount) // 2
-        
+        totalRows =
+            masterFile.rowCount + dataFile.rowCount
+
+        averageColumnCount =
+            (masterFile.columnCount + dataFile.columnCount) // 2
+
         -- Estimate processing complexity
-        complexityFactor = if averageColumnCount > 10 then 2 else 1
-        
+        complexityFactor =
+            if averageColumnCount > 10 then
+                2
+
+            else
+                1
+
         -- Base limit for good performance
-        baseLimit = 1000
-        
+        baseLimit =
+            1000
+
         -- Adjust limit based on complexity
-        adjustedLimit = 
+        adjustedLimit =
             if totalRows > 10000 then
                 baseLimit // (2 * complexityFactor)
+
             else if totalRows > 5000 then
                 baseLimit // complexityFactor
+
             else
                 baseLimit
     in
-    max 100 adjustedLimit  -- Minimum 100 rows for meaningful preview
+    max 100 adjustedLimit
+
+
+
+-- Minimum 100 rows for meaningful preview
 
 
 {-| Add performance metrics to processed data
@@ -331,10 +373,17 @@ calculateOptimalPreviewSize masterFile dataFile =
 addPerformanceMetrics : Float -> ProcessedData -> ProcessedData
 addPerformanceMetrics startTime processedData =
     let
-        endTime = 0.0  -- Would use Time.now in real implementation
-        processingTime = max 0.1 (endTime - startTime)  -- Ensure minimum time for tests
-        
-        currentStats = processedData.statistics
+        endTime =
+            0.0
+
+        -- Would use Time.now in real implementation
+        processingTime =
+            max 0.1 (endTime - startTime)
+
+        -- Ensure minimum time for tests
+        currentStats =
+            processedData.statistics
+
         updatedStats =
             { currentStats | processingTime = processingTime }
     in
@@ -345,10 +394,14 @@ addPerformanceMetrics startTime processedData =
 -}
 shouldDebouncePreviewGeneration : Model -> Bool
 shouldDebouncePreviewGeneration model =
-    model.isGeneratingPreview || (model.lastMemoryCheck > 0.0 && (0.0 - model.lastMemoryCheck) < 200.0)  -- 200ms debounce
+    model.isGeneratingPreview || (model.lastMemoryCheck > 0.0 && (0.0 - model.lastMemoryCheck) < 200.0)
 
 
-{-| Optimize preview data for memory efficiency  
+
+-- 200ms debounce
+
+
+{-| Optimize preview data for memory efficiency
 -}
 optimizePreviewForMemory : ProcessedData -> ProcessedData
 optimizePreviewForMemory processedData =
@@ -360,11 +413,13 @@ optimizePreviewForMemory processedData =
                 , dataRow = List.map (truncateString 100) record.dataRow
                 , matchedOn = List.map (truncateString 50) record.matchedOn
             }
-        
-        optimizedRecords = List.map truncateFields processedData.matchedRecords
+
+        optimizedRecords =
+            List.map truncateFields processedData.matchedRecords
     in
-    { processedData 
+    { processedData
         | matchedRecords = optimizedRecords
+
         -- Clear unmatched data for preview to save memory
         , unmatchedMaster = []
         , unmatchedData = []
@@ -377,6 +432,7 @@ truncateString : Int -> String -> String
 truncateString maxLength str =
     if String.length str <= maxLength then
         str
+
     else
         String.left (maxLength - 3) str ++ "..."
 
@@ -386,18 +442,33 @@ truncateString maxLength str =
 estimatePerformanceImpact : FileData -> FileData -> MatchConfig -> String
 estimatePerformanceImpact masterFile dataFile config =
     let
-        totalRows = masterFile.rowCount + dataFile.rowCount
-        totalColumns = masterFile.columnCount + dataFile.columnCount
-        
-        matchingColumns = List.length config.masterColumns + List.length config.dataColumns
-        complexityScore = totalRows * matchingColumns
-        
-        fuzzyPenalty = if config.useFuzzyMatch then 3 else 1
-        adjustedScore = complexityScore * fuzzyPenalty
+        totalRows =
+            masterFile.rowCount + dataFile.rowCount
+
+        totalColumns =
+            masterFile.columnCount + dataFile.columnCount
+
+        matchingColumns =
+            List.length config.masterColumns + List.length config.dataColumns
+
+        complexityScore =
+            totalRows * matchingColumns
+
+        fuzzyPenalty =
+            if config.useFuzzyMatch then
+                3
+
+            else
+                1
+
+        adjustedScore =
+            complexityScore * fuzzyPenalty
     in
     if adjustedScore > 100000 then
         "High complexity - preview may take longer than usual"
+
     else if adjustedScore > 50000 then
         "Medium complexity - preview generation in progress"
+
     else
         "Low complexity - preview should generate quickly"

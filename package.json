@@ -21,6 +21,7 @@
   "devDependencies": {
     "css-loader": "^6.8.1",
     "elm": "^0.19.1-5",
+    "elm-format": "^0.8.8",
     "elm-hot-webpack-loader": "^1.1.8",
     "elm-test": "^0.19.1-revision12",
     "elm-webpack-loader": "^7.0.1",

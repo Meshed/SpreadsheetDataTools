@@ -129,7 +129,7 @@ viewCurrentStep model =
             Html.map PreviewMsg (Preview.view model)
 
         SelectFields ->
-            Html.map SelectFieldsMsg (SelectFields.view model)
+            SelectFields.view model
 
         Download ->
             viewPlaceholderStep "Download Results" "Download your processed data as a CSV file."
