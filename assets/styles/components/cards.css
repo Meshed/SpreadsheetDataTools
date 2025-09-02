@@ -110,7 +110,6 @@
   box-shadow: var(--box-shadow-md);
   transition: all var(--transition-normal);
   overflow: hidden;
-  height: 100%;
   cursor: pointer;
 }
 
@@ -134,7 +133,6 @@
 
 .tool-card__content {
   padding: var(--spacing-lg);
-  height: 100%;
   display: flex;
   flex-direction: column;
 }

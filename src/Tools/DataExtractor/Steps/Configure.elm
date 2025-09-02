@@ -18,8 +18,6 @@ view : Model -> Html Msg
 view model =
     div [ class "configure-step" ]
         [ h2 [ class "configure-step__title" ] [ text "Configure Matching Criteria" ]
-        , div [ class "configure-step__progress" ]
-            [ text "Step 2 of 5" ]
         , div [ class "configure-step__explanation" ]
             [ p [] [ text "Columns match by selection order - 1st selected master column matches 1st selected data column, etc." ] ]
         , Html.map ConfigureMsg (renderValidationError (validateCurrentSelections model.selectedMasterColumns model.selectedDataColumns))

@@ -80,8 +80,6 @@ viewProgressIndicator currentStep =
     div [ class "wizard-progress" ]
         [ div [ class "wizard-progress__bar" ]
             (List.map (viewProgressStep currentIndex) steps)
-        , p [ class "wizard-progress__text" ]
-            [ text ("Step " ++ String.fromInt currentIndex ++ " of 5: " ++ ExtractorModel.stepToString currentStep) ]
         ]
 
 
