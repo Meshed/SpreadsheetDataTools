@@ -38,8 +38,6 @@ viewHeader =
         ]
 
 
-
-
 {-| Main preview content based on model state
 -}
 viewPreviewContent : Model -> Html PreviewMsg
@@ -123,6 +121,23 @@ viewPreviewSamples processedData =
     let
         previewRecords =
             List.take 3 processedData.matchedRecords
+
+        -- Calculate actual exportable records by filtering empty rows (same logic as CSV export)
+        exportableRecords =
+            processedData.matchedRecords
+                |> List.filter
+                    (\record ->
+                        let
+                            -- Combine master and data rows to check for meaningful data
+                            allColumns =
+                                record.masterRow ++ record.dataRow
+                        in
+                        -- Filter out completely empty rows (all fields empty or whitespace-only)
+                        not (List.all (\field -> String.trim field == "") allColumns)
+                    )
+
+        actualExportableCount =
+            List.length exportableRecords
     in
     div [ class "preview-samples" ]
         [ div [ class "preview-summary" ]
@@ -130,8 +145,8 @@ viewPreviewSamples processedData =
                 [ text "Showing "
                 , strong [] [ text (String.fromInt (List.length previewRecords)) ]
                 , text " sample matches out of "
-                , strong [] [ text (String.fromInt processedData.statistics.matchedCount) ]
-                , text " total matches found."
+                , strong [] [ text (String.fromInt actualExportableCount) ]
+                , text " exportable matches found."
                 ]
             ]
         , div [ class "samples-container" ]
@@ -157,14 +172,19 @@ viewMatchedRecord index record =
 viewRecordFieldsGrid : List String -> List String -> List String -> Html msg
 viewRecordFieldsGrid masterValues dataValues matchedFields =
     let
-        maxLength = max (List.length masterValues) (List.length dataValues)
-        
+        maxLength =
+            max (List.length masterValues) (List.length dataValues)
+
         -- Pad shorter list with empty strings
-        masterPadded = masterValues ++ List.repeat (maxLength - List.length masterValues) ""
-        dataPadded = dataValues ++ List.repeat (maxLength - List.length dataValues) ""
-        
+        masterPadded =
+            masterValues ++ List.repeat (maxLength - List.length masterValues) ""
+
+        dataPadded =
+            dataValues ++ List.repeat (maxLength - List.length dataValues) ""
+
         -- Create column headers (Field 1, Field 2, etc.)
-        columnHeaders = List.indexedMap (\i _ -> "Field " ++ String.fromInt (i + 1)) (List.range 0 (maxLength - 1))
+        columnHeaders =
+            List.indexedMap (\i _ -> "Field " ++ String.fromInt (i + 1)) (List.range 0 (maxLength - 1))
     in
     div [ class "record-fields-grid" ]
         [ div [ class "grid-table" ]
@@ -215,6 +235,7 @@ viewDataGridCell matchedFields index value =
         cellClass =
             if isMatched then
                 "grid-cell grid-cell--matched"
+
             else
                 "grid-cell"
     in

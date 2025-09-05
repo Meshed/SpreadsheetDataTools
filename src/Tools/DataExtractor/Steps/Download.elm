@@ -1,6 +1,4 @@
-module Tools.DataExtractor.Steps.Download exposing
-    ( view, processAllData, generateCSVFromData, formatFileSize, formatTimestamp
-    )
+module Tools.DataExtractor.Steps.Download exposing (view, processAllData, generateCSVFromData, formatFileSize, formatTimestamp)
 
 {-| Download step for the Data Extractor tool.
 
@@ -301,22 +299,32 @@ generateCSVFromData processedData fieldOrder =
         dataRows =
             if List.isEmpty fieldOrder then
                 []
+
             else
                 processedData.matchedRecords
-                    |> List.map (\record ->
-                        -- Combine master and data rows, then extract selected fields
-                        let
-                            allColumns =
-                                record.masterRow ++ record.dataRow
-                            
-                            -- For now, just take first N columns matching field order length
-                            -- In production, this would map field names to actual column values
-                        in
-                        List.take (List.length fieldOrder) allColumns
-                    )
+                    |> List.map
+                        (\record ->
+                            -- Combine master and data rows, then extract selected fields
+                            let
+                                allColumns =
+                                    record.masterRow ++ record.dataRow
+
+                                -- Extract columns matching field order length, padding with empty strings if needed
+                                extractedColumns =
+                                    List.take (List.length fieldOrder) allColumns
+                                        |> (\cols -> cols ++ List.repeat (List.length fieldOrder - List.length cols) "")
+                            in
+                            extractedColumns
+                        )
+                    |> List.filter
+                        (\row ->
+                            -- Filter out completely empty rows (all fields empty or whitespace-only)
+                            not (List.all (\field -> String.trim field == "") row)
+                        )
     in
     if List.isEmpty fieldOrder then
         ""
+
     else
         CSV.generateCSV headers dataRows
 
@@ -330,19 +338,22 @@ formatFileSize bytes =
 
     else if bytes < 1048576 then
         let
-            kbValue = toFloat bytes / 1024 |> round2
+            kbValue =
+                toFloat bytes / 1024 |> round2
         in
         formatDecimal kbValue ++ " KB"
 
     else if bytes < 1073741824 then
         let
-            mbValue = toFloat bytes / 1048576 |> round2
+            mbValue =
+                toFloat bytes / 1048576 |> round2
         in
         formatDecimal mbValue ++ " MB"
 
     else
         let
-            gbValue = toFloat bytes / 1073741824 |> round2
+            gbValue =
+                toFloat bytes / 1073741824 |> round2
         in
         formatDecimal gbValue ++ " GB"
 
@@ -359,11 +370,15 @@ round2 n =
 formatDecimal : Float -> String
 formatDecimal value =
     let
-        rounded = round2 value
-        asString = String.fromFloat rounded
+        rounded =
+            round2 value
+
+        asString =
+            String.fromFloat rounded
     in
     if String.contains "." asString then
         asString
+
     else
         asString ++ ".0"
 
@@ -376,14 +391,20 @@ formatTimestamp timestamp =
     -- For now, show a basic time format with colons
     let
         -- Get current time components (simplified approach)
-        hours = modBy 24 (floor (timestamp / (1000 * 60 * 60)))
-        minutes = modBy 60 (floor (timestamp / (1000 * 60)))
-        seconds = modBy 60 (floor (timestamp / 1000))
-        
+        hours =
+            modBy 24 (floor (timestamp / (1000 * 60 * 60)))
+
+        minutes =
+            modBy 60 (floor (timestamp / (1000 * 60)))
+
+        seconds =
+            modBy 60 (floor (timestamp / 1000))
+
         -- Format with leading zeros
         formatWithZero n =
             if n < 10 then
                 "0" ++ String.fromInt n
+
             else
                 String.fromInt n
     in

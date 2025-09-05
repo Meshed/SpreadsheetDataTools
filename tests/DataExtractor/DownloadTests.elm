@@ -30,22 +30,26 @@ suite =
                             Download.generateCSVFromData processedData fieldOrder
                     in
                     Expect.all
-                        [ \content -> 
-                            if String.contains "Name" content then 
-                                Expect.pass 
-                            else 
-                                Expect.fail "Should contain Name header"
-                        , \content -> 
-                            if String.contains "Email" content then 
-                                Expect.pass 
-                            else 
-                                Expect.fail "Should contain Email header"
-                        , \content -> 
-                            if String.contains "Phone" content then 
-                                Expect.fail "Should not contain Phone header" 
-                            else 
+                        [ \content ->
+                            if String.contains "Name" content then
                                 Expect.pass
-                        ] csvContent
+
+                            else
+                                Expect.fail "Should contain Name header"
+                        , \content ->
+                            if String.contains "Email" content then
+                                Expect.pass
+
+                            else
+                                Expect.fail "Should contain Email header"
+                        , \content ->
+                            if String.contains "Phone" content then
+                                Expect.fail "Should not contain Phone header"
+
+                            else
+                                Expect.pass
+                        ]
+                        csvContent
             , test "generateCSVFromData handles empty selected fields" <|
                 \_ ->
                     let
@@ -88,8 +92,9 @@ suite =
             , test "generateCSVFromData preserves field order for simple fields" <|
                 \_ ->
                     let
-                        fieldNames = [ "Name", "Email", "Age" ]
-                        
+                        fieldNames =
+                            [ "Name", "Email", "Age" ]
+
                         processedData =
                             { matchedRecords = []
                             , unmatchedMaster = []
@@ -106,22 +111,100 @@ suite =
                                 |> String.split ","
                     in
                     Expect.all
-                        [ \content -> 
-                            if String.contains "Name" content then 
-                                Expect.pass 
-                            else 
+                        [ \content ->
+                            if String.contains "Name" content then
+                                Expect.pass
+
+                            else
                                 Expect.fail "Should contain Name header"
-                        , \content -> 
-                            if String.contains "Email" content then 
-                                Expect.pass 
-                            else 
+                        , \content ->
+                            if String.contains "Email" content then
+                                Expect.pass
+
+                            else
                                 Expect.fail "Should contain Email header"
-                        , \content -> 
-                            if String.contains "Age" content then 
-                                Expect.pass 
-                            else 
+                        , \content ->
+                            if String.contains "Age" content then
+                                Expect.pass
+
+                            else
                                 Expect.fail "Should contain Age header"
-                        ] csvContent
+                        ]
+                        csvContent
+            , test "generateCSVFromData filters out empty rows" <|
+                \_ ->
+                    let
+                        -- Create test data with some empty records
+                        mixedMatchedRecords =
+                            [ { masterRow = [ "John Doe", "john@example.com" ]
+                              , dataRow = [ "Engineering", "Manager" ]
+                              , matchScore = 1.0
+                              , matchedOn = [ "Name" ]
+                              }
+                            , { masterRow = [ "", "" ] -- Completely empty
+                              , dataRow = [ "", "" ]
+                              , matchScore = 0.5
+                              , matchedOn = []
+                              }
+                            , { masterRow = [ "Jane Smith", "jane@example.com" ]
+                              , dataRow = [ "Marketing", "Director" ]
+                              , matchScore = 1.0
+                              , matchedOn = [ "Name" ]
+                              }
+                            , { masterRow = [ "  ", "\t" ] -- Whitespace only
+                              , dataRow = [ " ", "" ]
+                              , matchScore = 0.3
+                              , matchedOn = []
+                              }
+                            ]
+
+                        processedData =
+                            { matchedRecords = mixedMatchedRecords
+                            , unmatchedMaster = []
+                            , unmatchedData = []
+                            , statistics = sampleStats
+                            , selectedFields = Set.fromList [ "Name", "Email", "Department", "Role" ]
+                            }
+
+                        fieldOrder =
+                            [ "Name", "Email", "Department", "Role" ]
+
+                        csvContent =
+                            Download.generateCSVFromData processedData fieldOrder
+
+                        -- Split into lines and count non-header rows
+                        csvLines =
+                            csvContent
+                                |> String.split "\n"
+                                |> List.filter (\line -> not (String.isEmpty line))
+
+                        -- Should have header + 2 data rows (empty rows filtered out)
+                        expectedLineCount =
+                            3
+                    in
+                    Expect.all
+                        [ \content ->
+                            if String.contains "Name,Email,Department,Role" content then
+                                Expect.pass
+
+                            else
+                                Expect.fail "Should contain headers"
+                        , \content ->
+                            if String.contains "John Doe" content then
+                                Expect.pass
+
+                            else
+                                Expect.fail "Should contain John Doe"
+                        , \content ->
+                            if String.contains "Jane Smith" content then
+                                Expect.pass
+
+                            else
+                                Expect.fail "Should contain Jane Smith"
+                        , \_ ->
+                            Expect.equal expectedLineCount (List.length csvLines)
+                        ]
+                        csvContent
             ]
         , describe "Data Processing"
             [ test "processAllData handles valid configuration" <|
@@ -146,14 +229,16 @@ suite =
                             Download.processAllData config masterFile dataFile selectedFields
                     in
                     Expect.all
-                        [ \data -> 
+                        [ \data ->
                             if not (List.isEmpty data.matchedRecords) || data.statistics.totalMasterRows > 0 then
                                 Expect.pass
+
                             else
                                 Expect.fail "Should have matched records or statistics"
                         , \data -> Expect.greaterThan -1 data.statistics.matchedCount
                         , \data -> Expect.greaterThan -1 data.statistics.totalMasterRows
-                        ] processedData
+                        ]
+                        processedData
             , test "processAllData handles empty master file" <|
                 \_ ->
                     let
@@ -184,13 +269,14 @@ suite =
                     Expect.all
                         [ \data -> Expect.equal [] data.matchedRecords
                         , \data -> Expect.equal 0 data.statistics.matchedCount
-                        ] processedData
+                        ]
+                        processedData
             , test "processAllData handles invalid column indices" <|
                 \_ ->
                     let
                         config =
                             { masterColumns = [ 10, 20 ] -- Invalid indices
-                            , dataColumns = [ 15, 25 ]   -- Invalid indices
+                            , dataColumns = [ 15, 25 ] -- Invalid indices
                             , useFuzzyMatch = False
                             }
 
@@ -203,7 +289,8 @@ suite =
                     Expect.all
                         [ \data -> Expect.equal [] data.matchedRecords
                         , \data -> Expect.equal 0 data.statistics.matchedCount
-                        ] processedData
+                        ]
+                        processedData
             ]
         , describe "Utility Functions"
             [ test "formatFileSize handles bytes correctly" <|
@@ -213,72 +300,93 @@ suite =
                         , \_ -> Expect.equal "1.0 KB" (Download.formatFileSize 1024)
                         , \_ -> Expect.equal "1.5 MB" (Download.formatFileSize (1024 * 1024 * 1.5 |> round))
                         , \_ -> Expect.equal "2.0 GB" (Download.formatFileSize (1024 * 1024 * 1024 * 2))
-                        ] ()
+                        ]
+                        ()
             , fuzz (Fuzz.intRange 0 (10 * 1024 * 1024)) "formatFileSize always returns valid format" <|
                 \size ->
                     let
-                        formatted = Download.formatFileSize size
+                        formatted =
+                            Download.formatFileSize size
                     in
                     Expect.all
-                        [ \result -> 
-                            if String.contains " B" result || String.contains " KB" result || 
-                               String.contains " MB" result || String.contains " GB" result then
+                        [ \result ->
+                            if
+                                String.contains " B" result
+                                    || String.contains " KB" result
+                                    || String.contains " MB" result
+                                    || String.contains " GB" result
+                            then
                                 Expect.pass
+
                             else
                                 Expect.fail "Should contain size unit"
-                        , \result -> 
+                        , \result ->
                             if not (String.isEmpty result) then
                                 Expect.pass
+
                             else
                                 Expect.fail "Should not be empty"
-                        ] formatted
+                        ]
+                        formatted
             , test "formatTimestamp handles Unix timestamp" <|
                 \_ ->
                     let
                         -- Test with a known timestamp (2025-01-01 00:00:00 UTC)
-                        timestamp = 1735689600000
-                        formatted = Download.formatTimestamp timestamp
+                        timestamp =
+                            1735689600000
+
+                        formatted =
+                            Download.formatTimestamp timestamp
                     in
                     Expect.all
-                        [ \result -> 
+                        [ \result ->
                             if String.contains ":" result then
                                 Expect.pass
+
                             else
                                 Expect.fail "Should contain time format"
-                        , \result -> 
+                        , \result ->
                             if not (String.isEmpty result) then
                                 Expect.pass
+
                             else
                                 Expect.fail "Should not be empty"
-                        ] formatted
+                        ]
+                        formatted
             ]
         , describe "Progress Calculation"
             [ fuzz (Fuzz.floatRange 0.0 1.0) "progress values stay within bounds" <|
                 \progress ->
                     let
-                        percentage = round (progress * 100)
+                        percentage =
+                            round (progress * 100)
                     in
                     Expect.all
                         [ \p -> Expect.atLeast 0 p
                         , \p -> Expect.atMost 100 p
-                        ] percentage
+                        ]
+                        percentage
             , test "progress calculation for known values" <|
                 \_ ->
                     Expect.all
                         [ \_ -> Expect.equal 0 (round (0.0 * 100))
                         , \_ -> Expect.equal 50 (round (0.5 * 100))
                         , \_ -> Expect.equal 100 (round (1.0 * 100))
-                        ] ()
+                        ]
+                        ()
             ]
         ]
 
 
+
 -- Sample data for tests
+
+
 sampleMasterFile : FileData
 sampleMasterFile =
     { fileName = "master.xlsx"
     , headers = [ "Name", "Email", "Phone" ]
-    , rows = 
+    , rows =
         [ [ "John Doe", "john@example.com", "123-456-7890" ]
         , [ "Jane Smith", "jane@example.com", "098-765-4321" ]
         ]
@@ -292,7 +400,7 @@ sampleDataFile : FileData
 sampleDataFile =
     { fileName = "data.xlsx"
     , headers = [ "FullName", "Department", "EmailAddr" ]
-    , rows = 
+    , rows =
         [ [ "John Doe", "Engineering", "john@example.com" ]
         , [ "Jane Smith", "Marketing", "jane@example.com" ]
         , [ "Bob Johnson", "Sales", "bob@example.com" ]
@@ -329,7 +437,10 @@ sampleStats =
     }
 
 
+
 -- Helper functions
+
+
 removeDuplicates : List String -> List String
 removeDuplicates list =
     list
