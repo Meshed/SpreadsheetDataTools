@@ -10,7 +10,8 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Set
-import Tools.DataExtractor.Model exposing (ConfigureMsg(..), FileData, Model, Msg(..), PreviewMsg(..), SelectFieldsMsg(..), Step(..), ValidationError(..))
+import Tools.DataExtractor.Model exposing (ConfigureMsg(..), DownloadMsg(..), ExtractionStats, FileData, Model, Msg(..), PreviewMsg(..), ProcessingStatus(..), SelectFieldsMsg(..), Step(..), ValidationError(..))
+import Tools.DataExtractor.Steps.Download as Download
 import Tools.DataExtractor.Steps.Preview as Preview
 import Tools.DataExtractor.Steps.SelectFields as SelectFields
 import Types.Errors exposing (AppError(..))
@@ -182,6 +183,9 @@ update msg model =
 
         SelectFieldsMsg selectFieldsMsg ->
             updateSelectFieldsStep selectFieldsMsg model
+
+        DownloadMsg downloadMsg ->
+            updateDownloadStep downloadMsg model
 
         SelectField fieldName selected ->
             let
@@ -819,3 +823,96 @@ moveFieldDownHelper fieldName remaining acc =
 
         [ single ] ->
             List.reverse (single :: acc)
+
+
+{-| Update download step based on messages
+-}
+updateDownloadStep : DownloadMsg -> Model -> ( Model, Cmd Msg )
+updateDownloadStep msg model =
+    case msg of
+        StartProcessing ->
+            -- Start the full data processing
+            case ( model.masterFile, model.dataFile, model.matchConfig ) of
+                ( Just masterFile, Just dataFile, Just config ) ->
+                    let
+                        -- Process the data immediately (in real app, this would be async)
+                        processedData =
+                            Download.processAllData config masterFile dataFile model.selectedFields
+                        
+                        -- Generate CSV content
+                        csvContent =
+                            Download.generateCSVFromData processedData model.selectedFieldsOrder
+                        
+                        -- Calculate file size
+                        fileSizeBytes =
+                            String.length csvContent
+                        
+                        -- Create extraction stats
+                        stats =
+                            { recordsExtracted = List.length processedData.matchedRecords
+                            , fileSizeBytes = fileSizeBytes
+                            , timestamp = 0.0  -- Will be set properly with Time subscription
+                            }
+                        
+                        -- Generate filename with timestamp
+                        filename =
+                            "extracted_data.csv"  -- Will be enhanced with timestamp
+                    in
+                    -- First set to Processing state, then immediately complete
+                    ( { model 
+                        | processingStatus = Processing 1.0  -- Show full progress
+                        , processedData = Just processedData
+                        , extractionStats = Just stats
+                        }
+                    , Ports.downloadCSV { filename = filename, content = csvContent }
+                    )
+
+                _ ->
+                    ( { model | processingStatus = Failed "Missing required data for processing" }, Cmd.none )
+
+        ProcessingProgress progress ->
+            ( { model 
+                | processingProgress = progress
+                , processingStatus = Processing progress
+                }
+            , Cmd.none
+            )
+
+        ProcessingComplete processedData ->
+            ( { model 
+                | processedData = Just processedData
+                , processingStatus = Completed
+                }
+            , Cmd.none
+            )
+
+        DownloadInitiated url ->
+            ( { model | downloadUrl = Just url }, Cmd.none )
+
+        ClearData ->
+            -- Clear all data and reset to initial state
+            ( Tools.DataExtractor.Model.init
+            , Ports.clearMemory ()
+            )
+
+        StartOverFromDownload ->
+            -- Reset to Upload step but keep privacy notice shown
+            ( { model 
+                | currentStep = Upload
+                , masterFile = Nothing
+                , dataFile = Nothing
+                , processedData = Nothing
+                , previewData = Nothing
+                , processingStatus = NotStarted
+                , processingProgress = 0.0
+                , selectedFields = Set.empty
+                , selectedFieldsOrder = []
+                , extractionStats = Nothing
+                , downloadUrl = Nothing
+                , selectedMasterColumns = []
+                , selectedDataColumns = []
+                , matchConfig = Nothing
+                }
+            , Cmd.none
+            )
+

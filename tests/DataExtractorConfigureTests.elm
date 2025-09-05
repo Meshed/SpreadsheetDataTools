@@ -15,7 +15,7 @@ Tests include:
 import Expect
 import Set
 import Test exposing (Test, describe, test)
-import Tools.DataExtractor.Model exposing (ConfigureMsg(..), FileData, Model, Msg(..), Step(..), ValidationError(..))
+import Tools.DataExtractor.Model exposing (ConfigureMsg(..), FileData, Model, Msg(..), ProcessingStatus(..), Step(..), ValidationError(..))
 import Tools.DataExtractor.Steps.Configure exposing (view)
 import Tools.DataExtractor.Update exposing (update)
 
@@ -82,6 +82,12 @@ initialModel =
     , memoryLimitThreshold = 104857600 -- 100MB in bytes
     , showMemoryWarning = False
     , lastMemoryCheck = 0.0
+    
+    -- Download State Fields
+    , processingStatus = NotStarted
+    , downloadUrl = Nothing
+    , processingProgress = 0.0
+    , extractionStats = Nothing
     }
 
 

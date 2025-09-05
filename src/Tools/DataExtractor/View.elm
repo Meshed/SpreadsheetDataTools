@@ -11,6 +11,7 @@ import Html.Attributes exposing (attribute, class)
 import Ports
 import Tools.DataExtractor.Model as ExtractorModel exposing (Model, Msg(..), Step(..))
 import Tools.DataExtractor.Steps.Configure as Configure
+import Tools.DataExtractor.Steps.Download as Download
 import Tools.DataExtractor.Steps.Preview as Preview
 import Tools.DataExtractor.Steps.SelectFields as SelectFields
 import Tools.DataExtractor.Steps.Upload as Upload
@@ -130,7 +131,7 @@ viewCurrentStep model =
             SelectFields.view model
 
         Download ->
-            viewPlaceholderStep "Download Results" "Download your processed data as a CSV file."
+            Download.view model
 
 
 {-| Placeholder view for future steps

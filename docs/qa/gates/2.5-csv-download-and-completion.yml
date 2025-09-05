@@ -1,0 +1,24 @@
+schema: 1
+story: '2.5'
+gate: CONCERNS
+status_reason: 'Implementation complete but all testing deferred creates significant quality risk for critical CSV download functionality.'
+reviewer: 'Quinn'
+updated: '2025-09-05T12:00:00Z'
+top_issues:
+  - id: 'TEST-001'
+    severity: high
+    finding: 'All unit, integration, and E2E tests explicitly deferred to future story'
+    suggested_action: 'Implement at minimum P0 unit tests for CSV generation and data processing before release'
+  - id: 'TEST-002'
+    severity: medium
+    finding: 'No validation of CSV RFC 4180 compliance in current test suite'
+    suggested_action: 'Add CSV format validation tests to prevent data corruption'
+  - id: 'REL-001'
+    severity: medium
+    finding: 'Memory cleanup functionality not validated through testing'
+    suggested_action: 'Verify clearMemory port and model reset functions work correctly'
+  - id: 'ARCH-001'
+    severity: low
+    finding: 'Heavy reliance on integration testing without unit test foundation'
+    suggested_action: 'Prioritize unit tests for pure functions like CSV generation'
+waiver: { active: false }

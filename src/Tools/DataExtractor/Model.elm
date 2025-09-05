@@ -1,6 +1,6 @@
 module Tools.DataExtractor.Model exposing
-    ( Model, Msg(..), ConfigureMsg(..), PreviewMsg(..), SelectFieldsMsg(..), Step(..), FileData, ValidationError(..)
-    , MatchedRecord, ProcessingStats, ProcessedData, MatchConfig
+    ( Model, Msg(..), ConfigureMsg(..), PreviewMsg(..), SelectFieldsMsg(..), DownloadMsg(..), Step(..), FileData, ValidationError(..)
+    , MatchedRecord, ProcessingStats, ProcessedData, MatchConfig, ProcessingStatus(..), ExtractionStats
     , init, stepToString, canProceedToStep, getStepIndex
     , clearLargeDataStructures, estimateFileDataMemory, isMemoryUsageCritical, isMemoryUsageHigh, shouldShowMemoryWarning
       -- Memory Management Functions
@@ -8,8 +8,8 @@ module Tools.DataExtractor.Model exposing
 
 {-| Data Extractor tool model and types.
 
-@docs Model, Msg, ConfigureMsg, PreviewMsg, SelectFieldsMsg, Step, FileData, ValidationError
-@docs MatchedRecord, ProcessingStats, ProcessedData, MatchConfig
+@docs Model, Msg, ConfigureMsg, PreviewMsg, SelectFieldsMsg, DownloadMsg, Step, FileData, ValidationError
+@docs MatchedRecord, ProcessingStats, ProcessedData, MatchConfig, ProcessingStatus, ExtractionStats
 @docs init, stepToString, canProceedToStep, getStepIndex
 
 -}
@@ -51,6 +51,24 @@ type ValidationError
     | NoFileSelected String
 
 
+{-| Processing status for download step
+-}
+type ProcessingStatus
+    = NotStarted
+    | Processing Float  -- Progress from 0.0 to 1.0
+    | Completed
+    | Failed String
+
+
+{-| Extraction statistics for download summary
+-}
+type alias ExtractionStats =
+    { recordsExtracted : Int
+    , fileSizeBytes : Int
+    , timestamp : Float
+    }
+
+
 {-| Data Extractor tool model
 -}
 type alias Model =
@@ -80,6 +98,12 @@ type alias Model =
     , memoryLimitThreshold : Int -- 100MB hard limit
     , showMemoryWarning : Bool
     , lastMemoryCheck : Float -- Timestamp of last memory check
+    
+    -- Download State Management
+    , processingStatus : ProcessingStatus
+    , downloadUrl : Maybe String
+    , processingProgress : Float  -- 0.0 to 1.0
+    , extractionStats : Maybe ExtractionStats
     }
 
 
@@ -164,6 +188,17 @@ type ConfigureMsg
     | ValidateSelections
 
 
+{-| Download step messages
+-}
+type DownloadMsg
+    = StartProcessing
+    | ProcessingProgress Float
+    | ProcessingComplete ProcessedData
+    | DownloadInitiated String
+    | ClearData
+    | StartOverFromDownload
+
+
 {-| Data Extractor messages
 -}
 type Msg
@@ -182,6 +217,7 @@ type Msg
     | ConfigureMsg ConfigureMsg
     | PreviewMsg PreviewMsg
     | SelectFieldsMsg SelectFieldsMsg
+    | DownloadMsg DownloadMsg
     | SelectField String Bool
     | GenerateCSV
     | DownloadComplete
@@ -217,6 +253,12 @@ init =
     , memoryLimitThreshold = 104857600 -- 100MB in bytes
     , showMemoryWarning = False
     , lastMemoryCheck = 0.0
+    
+    -- Download State Initial Values
+    , processingStatus = NotStarted
+    , downloadUrl = Nothing
+    , processingProgress = 0.0
+    , extractionStats = Nothing
     }
 
 

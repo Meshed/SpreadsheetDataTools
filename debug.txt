@@ -1,0 +1,11 @@
+import Tools.DataExtractor.Steps.Download as Download
+import Shared.Processing.CSV as CSV
+
+testResult = 
+  let
+    headers = [""]
+    rows = []
+    csvResult = CSV.generateCSV headers rows
+  in
+  csvResult
+

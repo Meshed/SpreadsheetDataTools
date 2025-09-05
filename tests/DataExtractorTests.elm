@@ -2,6 +2,7 @@ module DataExtractorTests exposing (..)
 
 import Expect exposing (Expectation)
 import Json.Encode as Encode
+import Set
 import Test exposing (..)
 import Tools.DataExtractor.Model as DataExtractor
 import Tools.DataExtractor.Update as DataExtractorUpdate
@@ -251,8 +252,291 @@ suite =
                         ]
                         updatedModel
             ]
+        , describe "CSV Download Workflow Integration"
+            [ test "complete workflow from upload to download processing" <|
+                \_ ->
+                    let
+                        -- Start with initial model
+                        initialModel =
+                            DataExtractor.init
+
+                        -- Add master file
+                        masterFileData =
+                            { fileName = "master.xlsx"
+                            , fileSize = 1000
+                            , headers = [ "Name", "Email", "Phone" ]
+                            , rows = [ [ "John Doe", "john@example.com", "123-456-7890" ] ]
+                            , rowCount = 1
+                            , columnCount = 3
+                            }
+
+                        masterFileResult =
+                            encodeFileData masterFileData
+
+                        ( modelAfterMaster, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.MasterFileSelected (Encode.object [])) initialModel
+                                |> (\(model, cmd) -> DataExtractorUpdate.update (DataExtractor.FileParseResult masterFileResult) model)
+
+                        -- Add data file
+                        dataFileData =
+                            { fileName = "data.csv"
+                            , fileSize = 800
+                            , headers = [ "FullName", "Department", "EmailAddr" ]
+                            , rows = [ [ "John Doe", "Engineering", "john@example.com" ] ]
+                            , rowCount = 1
+                            , columnCount = 3
+                            }
+
+                        dataFileResult =
+                            encodeFileData dataFileData
+
+                        ( modelAfterData, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.DataFileSelected (Encode.object [])) modelAfterMaster
+                                |> (\(model, cmd) -> DataExtractorUpdate.update (DataExtractor.FileParseResult dataFileResult) model)
+
+                        -- Configure matching
+                        matchConfig =
+                            { masterColumns = [ 0, 1 ]
+                            , dataColumns = [ 0, 2 ]
+                            , useFuzzyMatch = False
+                            }
+
+                        ( modelAfterConfig, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.ConfigureMatching matchConfig) modelAfterData
+
+                        -- Add required fields for step validation
+                        modelWithColumns =
+                            { modelAfterConfig 
+                                | selectedMasterColumns = [ "Name", "Email" ]
+                                , selectedDataColumns = [ "FullName", "EmailAddr" ]
+                            }
+
+                        -- Add preview data (required for Download step)
+                        samplePreviewData =
+                            { matchedRecords = 
+                                [ { masterRow = [ "John Doe", "john@example.com" ]
+                                  , dataRow = [ "John Doe", "john@example.com" ]
+                                  , matchScore = 1.0
+                                  , matchedOn = [ "Name", "Email" ]
+                                  }
+                                ]
+                            , unmatchedMaster = []
+                            , unmatchedData = []
+                            , statistics = 
+                                { totalMasterRows = 1
+                                , totalDataRows = 1
+                                , matchedCount = 1
+                                , unmatchedMasterCount = 0
+                                , unmatchedDataCount = 0
+                                , processingTime = 100.0
+                                }
+                            , selectedFields = Set.fromList [ "Name", "Email" ]
+                            }
+
+                        modelWithPreview =
+                            { modelWithColumns 
+                                | previewData = Just samplePreviewData
+                                , selectedFields = Set.fromList [ "Name", "Email" ]
+                            }
+
+                        -- Navigate to Download step (should now pass validation)
+                        ( modelAtDownload, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.StepChanged DataExtractor.Download) modelWithPreview
+
+                        -- Start processing
+                        ( finalModel, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.DownloadMsg DataExtractor.StartProcessing) modelAtDownload
+                    in
+                    Expect.all
+                        [ \m -> Expect.notEqual Nothing m.masterFile
+                        , \m -> Expect.notEqual Nothing m.dataFile
+                        , \m -> Expect.notEqual Nothing m.matchConfig
+                        , \m -> Expect.equal DataExtractor.Download m.currentStep
+                        , \m -> Expect.notEqual DataExtractor.NotStarted m.processingStatus
+                        ]
+                        finalModel
+            , test "processing status transitions correctly" <|
+                \_ ->
+                    let
+                        -- Create a model ready for processing
+                        readyModel =
+                            createModelReadyForDownload
+
+                        -- Start processing
+                        ( processingModel, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.DownloadMsg DataExtractor.StartProcessing) readyModel
+
+                        -- Simulate progress update
+                        ( progressModel, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.DownloadMsg (DataExtractor.ProcessingProgress 0.5)) processingModel
+
+                        -- Simulate completion
+                        processedData =
+                            { matchedRecords = []
+                            , unmatchedMaster = []
+                            , unmatchedData = []
+                            , statistics = 
+                                { totalMasterRows = 1
+                                , totalDataRows = 1
+                                , matchedCount = 0
+                                , unmatchedMasterCount = 1
+                                , unmatchedDataCount = 1
+                                , processingTime = 100.0
+                                }
+                            , selectedFields = Set.empty
+                            }
+
+                        ( completedModel, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.DownloadMsg (DataExtractor.ProcessingComplete processedData)) progressModel
+                    in
+                    Expect.all
+                        [ \_ -> case processingModel.processingStatus of
+                            DataExtractor.Processing _ -> Expect.pass
+                            _ -> Expect.fail "Expected Processing status after StartProcessing"
+                        , \_ -> case progressModel.processingStatus of
+                            DataExtractor.Processing progress -> Expect.within (Expect.Absolute 0.01) 0.5 progress
+                            _ -> Expect.fail "Expected Processing status with correct progress"
+                        , \_ -> Expect.equal DataExtractor.Completed completedModel.processingStatus
+                        ]
+                        ()
+            , test "memory cleanup resets model state" <|
+                \_ ->
+                    let
+                        -- Create a model with data
+                        modelWithData =
+                            createModelReadyForDownload
+
+                        -- Clear all data
+                        ( clearedModel, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.DownloadMsg DataExtractor.ClearData) modelWithData
+                    in
+                    Expect.all
+                        [ \m -> Expect.equal Nothing m.masterFile
+                        , \m -> Expect.equal Nothing m.dataFile
+                        , \m -> Expect.equal Nothing m.previewData
+                        , \m -> Expect.equal DataExtractor.NotStarted m.processingStatus
+                        ]
+                        clearedModel
+            , test "start over resets wizard to upload step" <|
+                \_ ->
+                    let
+                        -- Create a model at download step
+                        downloadModel =
+                            createModelReadyForDownload
+
+                        -- Start over
+                        ( resetModel, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.DownloadMsg DataExtractor.StartOverFromDownload) downloadModel
+                    in
+                    Expect.all
+                        [ \m -> Expect.equal DataExtractor.Upload m.currentStep
+                        , \m -> Expect.equal Nothing m.masterFile
+                        , \m -> Expect.equal Nothing m.dataFile
+                        , \m -> Expect.equal Nothing m.previewData
+                        , \m -> Expect.equal DataExtractor.NotStarted m.processingStatus
+                        ]
+                        resetModel
+            , test "download workflow handles empty result set" <|
+                \_ ->
+                    let
+                        readyModel =
+                            createModelReadyForDownload
+
+                        -- Simulate processing with no matches
+                        emptyProcessedData =
+                            { matchedRecords = []
+                            , unmatchedMaster = [ [ "John Doe", "john@example.com" ] ]
+                            , unmatchedData = [ [ "Jane Smith", "jane@example.com" ] ]
+                            , statistics = 
+                                { totalMasterRows = 1
+                                , totalDataRows = 1
+                                , matchedCount = 0
+                                , unmatchedMasterCount = 1
+                                , unmatchedDataCount = 1
+                                , processingTime = 50.0
+                                }
+                            , selectedFields = Set.empty
+                            }
+
+                        ( completedModel, _ ) =
+                            DataExtractorUpdate.update (DataExtractor.DownloadMsg DataExtractor.StartProcessing) readyModel
+                                |> (\(model, cmd) -> DataExtractorUpdate.update (DataExtractor.DownloadMsg (DataExtractor.ProcessingComplete emptyProcessedData)) model)
+                    in
+                    Expect.all
+                        [ \m -> Expect.equal DataExtractor.Completed m.processingStatus
+                        , \m -> case m.processedData of
+                            Just data -> Expect.equal 0 data.statistics.matchedCount
+                            Nothing -> Expect.fail "Expected processed data to be present"
+                        ]
+                        completedModel
+            ]
         ]
 
+
+
+-- Helper function to create a model ready for download processing
+createModelReadyForDownload : DataExtractor.Model
+createModelReadyForDownload =
+    let
+        baseModel =
+            DataExtractor.init
+
+        masterFile =
+            { fileName = "master.xlsx"
+            , headers = [ "Name", "Email" ]
+            , rows = [ [ "John Doe", "john@example.com" ] ]
+            , rowCount = 1
+            , fileSize = 1000
+            , columnCount = 2
+            }
+
+        dataFile =
+            { fileName = "data.csv"
+            , headers = [ "FullName", "EmailAddr" ]
+            , rows = [ [ "John Doe", "john@example.com" ] ]
+            , rowCount = 1
+            , fileSize = 800
+            , columnCount = 2
+            }
+
+        matchConfig =
+            { masterColumns = [ 0, 1 ]
+            , dataColumns = [ 0, 1 ]
+            , useFuzzyMatch = False
+            }
+
+        -- Create sample preview data to satisfy validation
+        samplePreviewData =
+            { matchedRecords = 
+                [ { masterRow = [ "John Doe", "john@example.com" ]
+                  , dataRow = [ "John Doe", "john@example.com" ]
+                  , matchScore = 1.0
+                  , matchedOn = [ "Name", "Email" ]
+                  }
+                ]
+            , unmatchedMaster = []
+            , unmatchedData = []
+            , statistics = 
+                { totalMasterRows = 1
+                , totalDataRows = 1
+                , matchedCount = 1
+                , unmatchedMasterCount = 0
+                , unmatchedDataCount = 0
+                , processingTime = 100.0
+                }
+            , selectedFields = Set.fromList [ "Name", "Email" ]
+            }
+    in
+    { baseModel
+        | masterFile = Just masterFile
+        , dataFile = Just dataFile
+        , matchConfig = Just matchConfig
+        , currentStep = DataExtractor.Download
+        , selectedFields = Set.fromList [ "Name", "Email" ]
+        , selectedMasterColumns = [ "Name", "Email" ]  -- Required for Preview step validation
+        , selectedDataColumns = [ "FullName", "EmailAddr" ]  -- Required for Preview step validation
+        , previewData = Just samplePreviewData  -- Required for Download step validation
+    }
 
 
 -- Helper function to create a model with processingFileType set
