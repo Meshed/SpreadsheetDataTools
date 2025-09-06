@@ -196,7 +196,11 @@ evaluateFieldMatch useFuzzy masterValue dataValue =
         cleanData =
             String.trim (String.toLower dataValue)
     in
-    if exactMatch cleanMaster cleanData then
+    -- Prevent matching on empty values - both fields must have content
+    if String.isEmpty cleanMaster || String.isEmpty cleanData then
+        Nothing
+
+    else if exactMatch cleanMaster cleanData then
         Just { fieldIndex = "exact", score = 1.0 }
 
     else if useFuzzy && fuzzyMatch 0.8 cleanMaster cleanData then

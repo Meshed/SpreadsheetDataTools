@@ -836,7 +836,7 @@ updateDownloadStep msg model =
                         
                         -- Generate CSV content
                         csvContent =
-                            Download.generateCSVFromData processedData model.selectedFieldsOrder
+                            Download.generateCSVFromData processedData model.selectedFieldsOrder masterFile dataFile
                         
                         -- Calculate file size
                         fileSizeBytes =

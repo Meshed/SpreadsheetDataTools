@@ -8,6 +8,7 @@ Processes all matching records, generates CSV file, and manages download complet
 
 -}
 
+import Dict exposing (Dict)
 import Html exposing (Html, button, div, h2, h3, h4, i, p, progress, span, text)
 import Html.Attributes exposing (class, disabled, value)
 import Html.Events exposing (onClick)
@@ -288,14 +289,17 @@ processAllData config masterFile dataFile selectedFields =
 
 {-| Generate CSV string from processed data using only selected fields
 -}
-generateCSVFromData : ProcessedData -> List String -> String
-generateCSVFromData processedData fieldOrder =
+generateCSVFromData : ProcessedData -> List String -> FileData -> FileData -> String
+generateCSVFromData processedData fieldOrder masterFile dataFile =
     let
-        -- Use all fields as provided (including empty strings if they exist)
+        -- Use selected fields as headers
         headers =
             fieldOrder
 
-        -- Extract data rows from matched records, filtering by selected fields
+        -- Create field mapping (same logic as SelectFields preview)
+        fieldMapping = createFieldMapping masterFile dataFile
+
+        -- Extract data rows from matched records using proper field mapping
         dataRows =
             if List.isEmpty fieldOrder then
                 []
@@ -304,17 +308,12 @@ generateCSVFromData processedData fieldOrder =
                 processedData.matchedRecords
                     |> List.map
                         (\record ->
-                            -- Combine master and data rows, then extract selected fields
+                            -- Combine master and data rows for field lookup
                             let
-                                allColumns =
-                                    record.masterRow ++ record.dataRow
-
-                                -- Extract columns matching field order length, padding with empty strings if needed
-                                extractedColumns =
-                                    List.take (List.length fieldOrder) allColumns
-                                        |> (\cols -> cols ++ List.repeat (List.length fieldOrder - List.length cols) "")
+                                allFields = record.masterRow ++ record.dataRow
                             in
-                            extractedColumns
+                            -- Map each selected field to its value using field mapping
+                            List.map (getFieldValue allFields fieldMapping) fieldOrder
                         )
                     |> List.filter
                         (\row ->
@@ -327,6 +326,41 @@ generateCSVFromData processedData fieldOrder =
 
     else
         CSV.generateCSV headers dataRows
+
+
+{-| Create field mapping for CSV export (maps field names to indices)
+Same logic as used in SelectFields step
+-}
+createFieldMapping : FileData -> FileData -> Dict String Int
+createFieldMapping masterFile dataFile =
+    let
+        -- Create mapping for master file fields (indices 0 to n-1)
+        masterMapping = 
+            List.indexedMap (\index field -> (field, index)) masterFile.headers
+                |> Dict.fromList
+        
+        -- Create mapping for data file fields (indices start after master fields)
+        dataMapping = 
+            List.indexedMap (\index field -> (field, index + List.length masterFile.headers)) dataFile.headers
+                |> Dict.fromList
+    in
+    Dict.union masterMapping dataMapping
+
+
+{-| Get field value from combined row data using field mapping
+Same logic as used in SelectFields step
+-}
+getFieldValue : List String -> Dict String Int -> String -> String
+getFieldValue allFields fieldMapping fieldName =
+    case Dict.get fieldName fieldMapping of
+        Just index ->
+            case List.head (List.drop index allFields) of
+                Just value ->
+                    value
+                Nothing ->
+                    ""
+        Nothing ->
+            ""
 
 
 {-| Format file size in human-readable format
