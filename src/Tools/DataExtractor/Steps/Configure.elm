@@ -169,7 +169,7 @@ renderGridMasterColumn selectedMasterColumns selectedDataColumns column =
             else
                 "matching-grid__column"
     in
-    div [ class columnClass, onClick (toggleMasterColumn column) ]
+    div [ class columnClass, onClick (toggleMasterColumn selectedMasterColumns column) ]
         [ div [ class "matching-grid__column-header" ]
             [ input [ type_ "checkbox", checked isSelected ] []
             , span [ class "matching-grid__column-name" ] [ text column ]
@@ -207,7 +207,7 @@ renderGridDataColumn selectedMasterColumns selectedDataColumns column =
             else
                 "matching-grid__column"
     in
-    div [ class columnClass, onClick (toggleDataColumn column) ]
+    div [ class columnClass, onClick (toggleDataColumn selectedDataColumns column) ]
         [ div [ class "matching-grid__column-header" ]
             [ input [ type_ "checkbox", checked isSelected ] []
             , span [ class "matching-grid__column-name" ] [ text column ]
@@ -224,16 +224,22 @@ renderGridDataColumn selectedMasterColumns selectedDataColumns column =
 
 {-| Toggle master column selection
 -}
-toggleMasterColumn : String -> ConfigureMsg
-toggleMasterColumn column =
-    SelectMasterColumn column
+toggleMasterColumn : List String -> String -> ConfigureMsg
+toggleMasterColumn selectedColumns column =
+    if List.member column selectedColumns then
+        DeselectMasterColumn column
+    else
+        SelectMasterColumn column
 
 
 {-| Toggle data column selection  
 -}
-toggleDataColumn : String -> ConfigureMsg
-toggleDataColumn column =
-    SelectDataColumn column
+toggleDataColumn : List String -> String -> ConfigureMsg
+toggleDataColumn selectedColumns column =
+    if List.member column selectedColumns then
+        DeselectDataColumn column
+    else
+        SelectDataColumn column
 
 
 {-| Render matching summary section

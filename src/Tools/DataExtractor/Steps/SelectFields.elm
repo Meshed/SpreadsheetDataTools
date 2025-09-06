@@ -96,16 +96,19 @@ viewFieldSelection model masterFile dataFile previewData =
                 Nothing
     in
     div [ class "field-selection" ]
-        [ viewBulkActions fieldCount (List.length model.availableFields)
-        , div [ class "field-selection-panels" ]
-            [ div [ class "field-selection-panel" ]
-                [ viewSelectedFieldsList model
-                , viewAvailableFieldsList model masterFile dataFile previewData
-                ]
-            , div [ class "csv-preview-panel" ]
+        [ viewValidationMessage validationError
+        , viewBulkActions fieldCount (List.length model.availableFields)
+        , if List.isEmpty model.selectedFieldsOrder then
+            text ""
+          else
+            div [ class "csv-preview-panel" ]
                 [ viewCSVPreview model masterFile dataFile previewData ]
+        , div [ class "field-selection-panels" ]
+            [ div [ class "available-fields-panel" ]
+                [ viewAvailableFieldsList model masterFile dataFile previewData ]
+            , div [ class "selected-fields-panel" ]
+                [ viewSelectedFieldsList model ]
             ]
-        , viewValidationMessage validationError
         ]
 
 

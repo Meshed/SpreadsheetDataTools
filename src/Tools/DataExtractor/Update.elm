@@ -768,34 +768,29 @@ updateSelectFieldsStep selectFieldsMsg model =
 -}
 moveFieldUp : String -> List String -> List String
 moveFieldUp fieldName fields =
-    case fields of
-        [] ->
-            []
-
-        first :: rest ->
-            if first == fieldName then
-                -- Already at the top
-                fields
-
-            else
-                first :: moveFieldUpHelper fieldName rest
+    moveFieldUpHelper fieldName fields []
 
 
-{-| Helper function to move field up
+{-| Helper function to move field up - accumulates previous elements
 -}
-moveFieldUpHelper : String -> List String -> List String
-moveFieldUpHelper fieldName fields =
-    case fields of
+moveFieldUpHelper : String -> List String -> List String -> List String
+moveFieldUpHelper fieldName remaining acc =
+    case remaining of
         [] ->
-            []
+            List.reverse acc
 
         first :: rest ->
             if first == fieldName then
-                -- Swap with previous
-                fieldName :: rest
-
+                case acc of
+                    [] ->
+                        -- Already at the top
+                        fieldName :: rest
+                    
+                    prevField :: accRest ->
+                        -- Swap with previous field
+                        List.reverse accRest ++ [ fieldName, prevField ] ++ rest
             else
-                first :: moveFieldUpHelper fieldName rest
+                moveFieldUpHelper fieldName rest (first :: acc)
 
 
 {-| Move a field down in the order list
