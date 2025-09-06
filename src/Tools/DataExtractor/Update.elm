@@ -858,9 +858,9 @@ updateDownloadStep msg model =
                         filename =
                             "extracted_data.csv"  -- Will be enhanced with timestamp
                     in
-                    -- First set to Processing state, then immediately complete
+                    -- Set to Completed state with all data
                     ( { model 
-                        | processingStatus = Processing 1.0  -- Show full progress
+                        | processingStatus = Completed
                         , processedData = Just processedData
                         , extractionStats = Just stats
                         }
